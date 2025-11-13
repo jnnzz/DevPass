@@ -85,8 +85,8 @@ export default function Landing() {
 
             <div className="space-y-5 mb-12">
               <div className="flex items-start gap-4 group">
-                <div className={`${darkMode ? 'bg-blue-500/20 border border-blue-500/30 group-hover:bg-blue-500/30' : 'bg-blue-100 border border-blue-300/60 group-hover:bg-blue-200'} rounded-xl p-3 transition-all duration-300`}>
-                  <Zap className={`w-5 h-5 ${featureCardText}`} />
+                <div className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}>
+                  <Zap className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
                 </div>
                 <div>
                   <h3 className={`font-semibold text-lg ${featureTitleText} mb-1`}>Digital Gate Pass</h3>
@@ -95,8 +95,8 @@ export default function Landing() {
               </div>
 
               <div className="flex items-start gap-4 group">
-                <div className={`${darkMode ? 'bg-indigo-500/20 border border-indigo-500/30 group-hover:bg-indigo-500/30' : 'bg-indigo-100 border border-indigo-300/60 group-hover:bg-indigo-200'} rounded-xl p-3 transition-all duration-300`}>
-                  <Shield className={`w-5 h-5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                <div className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}>
+                  <Shield className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
                 </div>
                 <div>
                   <h3 className={`font-semibold text-lg ${featureTitleText} mb-1`}>Enhanced Security</h3>
@@ -138,7 +138,7 @@ export default function Landing() {
               <div className={`flex gap-2 ${toggleBg} rounded-xl p-1 mb-8`}>
                 <button
                   onClick={() => setIsLogin(true)}
-                  className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
+                  className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 cursor-pointer ${
                     isLogin 
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
                       : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
@@ -150,7 +150,7 @@ export default function Landing() {
                   onClick={() => {setIsLogin(false)
                     // Navigate('/register');
                   }}
-                  className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
+                  className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 cursor-pointer ${
                     !isLogin 
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
                       : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
@@ -186,7 +186,7 @@ export default function Landing() {
                     <input
                       type="text"
                       className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                      placeholder="STU123456"
+                      placeholder="23781234"
                     />
                   </div>
                 </div>
@@ -229,11 +229,11 @@ export default function Landing() {
                 )}
 
                 {isLogin && (
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center cursor-pointer gap-2">
+                  <div className="flex items-center justify-end">
+                    {/* <label className="flex items-center cursor-pointer gap-2">
                       <input type="checkbox" className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600`} />
                       <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Remember me</span>
-                    </label>
+                    </label> */}
                     <a href="#" className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
                       Forgot password?
                     </a>
@@ -242,7 +242,7 @@ export default function Landing() {
 
                 <button
                   type="button"
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-blue-500/50"
+                  className="w-full cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-blue-500/50"
                   style={{focusRingOffset: darkMode ? undefined : 'rgb(255, 255, 255, 0.8)'}}
                 >
                   {isLogin ? 'Sign In' : 'Create Account'}
@@ -254,7 +254,7 @@ export default function Landing() {
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
                   <button
                     onClick={() => setIsLogin(!isLogin)}
-                    className={`font-semibold transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                    className={`font-semibold cursor-pointer transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                   >
                     {isLogin ? 'Sign up' : 'Sign in'}
                   </button>
