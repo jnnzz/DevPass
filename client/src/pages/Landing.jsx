@@ -1,10 +1,103 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, User, Zap, Shield, Rocket, Moon, Sun } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, Zap, Shield, Rocket, Moon, Sun, Mail, GraduationCap, Calendar } from 'lucide-react';
+import { authService } from '../services/authService';
+import { useNavigate } from 'react-router-dom';
 
 export default function Landing() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    course: '',
+    phone: '',
+    department: '',
+    year_of_study: '',
+    password: '',
+    password_confirmation: '',
+  });
+  
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        // LOGIN
+        const result = await authService.login({
+          id: formData.id,
+          password: formData.password,
+        });
+        setMessage('✅ Login successful!');
+        console.log('Logged in user:', result);
+        
+        // Redirect to students page after successful login
+        setTimeout(() => {
+          navigate('/student/dashboard');
+        }, 1000);
+        
+      } else {
+        // REGISTER
+        if (formData.password !== formData.password_confirmation) {
+          setError('❌ Passwords do not match!');
+          setLoading(false);
+          return;
+        }
+
+        const result = await authService.register({
+          id: formData.id,
+          name: formData.name,
+          email: formData.email,
+          course: formData.course,
+          phone: formData.phone,
+          department: formData.department,
+          year_of_study: formData.year_of_study ? parseInt(formData.year_of_study) : null,
+          password: formData.password,
+          password_confirmation: formData.password_confirmation,
+        });
+        setMessage('✅ Registered successfully!');
+        console.log('Registered user:', result);
+        
+        // Switch to login after successful registration
+        setTimeout(() => {
+          setIsLogin(true);
+          setFormData({
+            id: '',
+            name: '',
+            email: '',
+            course: '',
+            phone: '',
+            department: '',
+            year_of_study: '',
+            password: '',
+            password_confirmation: '',
+          });
+        }, 1500);
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.response?.data?.errors?.email?.[0] || 'Operation failed';
+      setError(`❌ ${errorMessage}`);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const bgClass = darkMode 
     ? 'bg-black text-white' 
@@ -114,12 +207,6 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-
-            <div className={`pt-8 ${darkMode ? 'border-gray-700/50' : 'border-gray-300/50'} border-t`}>
-              {/* <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
-                Built by Group 3 • Laroco, Abais, Postreros, Service
-              </p> */}
-            </div>
           </div>
 
           {/* Right Side - Form */}
@@ -147,9 +234,7 @@ export default function Landing() {
                   Login
                 </button>
                 <button
-                  onClick={() => {setIsLogin(false)
-                    // Navigate('/register');
-                  }}
+                  onClick={() => setIsLogin(false)}
                   className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
                     !isLogin 
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
@@ -160,94 +245,213 @@ export default function Landing() {
                 </button>
               </div>
 
-              <div className="space-y-5">
-                {!isLogin && (
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-5">
+                  {!isLogin && (
+                    <>
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                          Full Name
+                        </label>
+                        <div className="relative">
+                          <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="name"
+                            type="text"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="John Doe"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                          Course
+                        </label>
+                        <div className="relative">
+                          <GraduationCap className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="course"
+                            type="text"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="Computer Science"
+                            value={formData.course}
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Phone */}
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>Phone</label>
+                        <div className="relative">
+                          <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="phone"
+                            type="text"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="09123456789"
+                            value={formData.phone}
+                            onChange={handleChange}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Department */}
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>Department</label>
+                        <div className="relative">
+                          <GraduationCap className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="department"
+                            type="text"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="Engineering"
+                            value={formData.department}
+                            onChange={handleChange}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Year of Study */}
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>Year of Study</label>
+                        <div className="relative">
+                          <Calendar className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="year_of_study"
+                            type="number"
+                            min="1"
+                            max="10"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="3"
+                            value={formData.year_of_study}
+                            onChange={handleChange}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                          {isLogin ? 'Email' : 'Email Address'}
+                        </label>
+                        <div className="relative">
+                          <Mail className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="email"
+                            type="email"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="student@example.com"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </>                 
+                  )}
+
                   <div>
                     <label className={`block text-sm font-semibold ${formText} mb-3`}>
-                      Full Name
+                      Student ID
                     </label>
                     <div className="relative">
                       <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
                       <input
+                        name="id"
                         type="text"
                         className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                        placeholder="John Doe"
+                        placeholder="e.g., 23664035"
+                        value={formData.id}
+                        onChange={handleChange}
+                        required
                       />
                     </div>
                   </div>
-                )}
 
-                <div>
-                  <label className={`block text-sm font-semibold ${formText} mb-3`}>
-                    Student ID
-                  </label>
-                  <div className="relative">
-                    <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
-                    <input
-                      type="text"
-                      className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                      placeholder="STU123456"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold ${formText} mb-3`}>
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      className={`w-full pl-12 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className={`absolute right-4 top-3.5 transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                {!isLogin && (
                   <div>
                     <label className={`block text-sm font-semibold ${formText} mb-3`}>
-                      Confirm Password
+                      Password
                     </label>
                     <div className="relative">
                       <Lock className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
                       <input
+                        name="password"
                         type={showPassword ? 'text' : 'password'}
                         className={`w-full pl-12 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="••••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className={`absolute right-4 top-3.5 transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
                     </div>
                   </div>
-                )}
 
-                {isLogin && (
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center cursor-pointer gap-2">
-                      <input type="checkbox" className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600`} />
-                      <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Remember me</span>
-                    </label>
-                    <a href="#" className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
-                      Forgot password?
-                    </a>
-                  </div>
-                )}
+                  {!isLogin && (
+                    <div>
+                      <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <Lock className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                        <input
+                          name="password_confirmation"
+                          type={showPassword ? 'text' : 'password'}
+                          className={`w-full pl-12 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                          placeholder="••••••••"
+                          value={formData.password_confirmation}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                <button
-                  type="button"
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-blue-500/50"
-                  style={{focusRingOffset: darkMode ? undefined : 'rgb(255, 255, 255, 0.8)'}}
-                >
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                </button>
-              </div>
+                  {isLogin && (
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center cursor-pointer gap-2">
+                        <input type="checkbox" className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600`} />
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Remember me</span>
+                      </label>
+                      <a href="#" className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
+                        Forgot password?
+                      </a>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (isLogin ? 'Signing in...' : 'Creating account...') : (isLogin ? 'Sign In' : 'Create Account')}
+                  </button>
+                </div>
+              </form>
+
+              {/* Success/Error Messages */}
+              {message && (
+                <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
+                  {message}
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+                  {error}
+                </div>
+              )}
 
               <div className="mt-8 text-center">
                 <p className={formDescText}>
