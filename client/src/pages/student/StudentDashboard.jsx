@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { studentInfo, devices, recentActivity } from '../../data/mockData';
+import { useQRCode } from '../../hooks/useQRCode';
 import { 
   QrCode, 
   Laptop, 
@@ -40,7 +42,7 @@ function Register({ darkMode, onClose }) {
     onClose();
   };
 
-  const inputBg = darkMode ? 'bg-white/10 border-white/20' : 'bg-white/60 border-white/40';
+  const inputBg = darkMode ? 'bg-black border-gray/20' : 'bg-white/60 border-gray/40';
   const textPrimary = darkMode ? 'text-white' : 'text-gray-900';
   const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
 
@@ -119,7 +121,7 @@ function Register({ darkMode, onClose }) {
               value={formData.serialNumber}
               onChange={handleChange}
               placeholder="Device serial number"
-              className={`w-full px-4 py-2.5 rounded-lg border ${inputBg} ${textPrimary} placeholder-gray-500 font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              className={`w-full px-4 py-2.5 rounded-lg border  border-gray-500 ${inputBg} ${textPrimary} placeholder-gray-500 font-medium transition-all focus:outline-none focus:ring-1 focus:ring-blue-500`}
             />
           </div>
 
@@ -133,7 +135,7 @@ function Register({ darkMode, onClose }) {
               onChange={handleChange}
               placeholder="Any additional information..."
               rows="3"
-              className={`w-full px-4 py-2.5 rounded-lg border ${inputBg} ${textPrimary} placeholder-gray-500 font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+              className={`w-full px-4 py-2.5 rounded-lg border border-gray-500 ${inputBg} ${textPrimary} placeholder-gray-500 font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
             />
           </div>
 
@@ -175,43 +177,8 @@ export default function StudentDashboard() {
   const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState('devices');
   const [showRegister, setShowRegister] = useState(false);
-
-  // Mock data
-  const studentInfo = {
-    name: "Jan Lorenz Laroco",
-    studentId: "STU123456",
-    department: "CCS",
-    course: "BSIT",
-    year: 3
-  };
-
-  const devices = [
-    {
-      id: 1,
-      type: "Laptop",
-      brand: "Dell",
-      model: "XPS 15",
-      status: "active",
-      qrExpiry: "2025-11-14",
-      lastScanned: "2025-10-14 08:30 AM"
-    },
-    {
-      id: 2,
-      type: "Laptop",
-      brand: "MacBook",
-      model: "Pro M2",
-      status: "pending",
-      qrExpiry: null,
-      lastScanned: null
-    }
-  ];
-
-  const recentActivity = [
-    { gate: "Main Gate", time: "2025-10-14 08:30 AM", status: "success" },
-    { gate: "Engineering Gate", time: "2025-10-13 02:15 PM", status: "success" },
-    { gate: "Main Gate", time: "2025-10-13 08:00 AM", status: "success" },
-    { gate: "Main Gate", time: "2025-10-12 09:45 AM", status: "success" }
-  ];
+  const [deviceFilter, setDeviceFilter] = useState('all'); // 'all', 'active', 'pending'  
+  const qrCodes = useQRCode(devices, studentInfo);
 
   const bgClass = darkMode 
     ? 'bg-black text-white' 
@@ -242,6 +209,13 @@ export default function StudentDashboard() {
     if (status === 'expired') return <XCircle className="w-4 h-4" />;
     return <AlertCircle className="w-4 h-4" />;
   };
+
+  // Simple QR code generator function
+  // const generateQRCodeSVG = (data, size = 200) => {
+  //   // Using a data URL approach with qrcode.react concept
+  //   const qrData = encodeURIComponent(data);
+  //   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${qrData}`;
+  // };
 
   return (
     <div className={`min-h-screen ${bgClass} transition-colors duration-500`}>
@@ -301,8 +275,8 @@ export default function StudentDashboard() {
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+      {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
           <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
@@ -325,30 +299,30 @@ export default function StudentDashboard() {
 
           <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
             <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-yellow-500/20' : 'bg-yellow-100'}`}>
-                <Clock className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-yellow-50 border border-yellow-200'}`}>
+                <Clock className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`} />
               </div>
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>1</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Pending</p>
           </div>
 
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          {/* <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
-                <Calendar className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                <Calendar className="w-4 h-4 sm:w-6 sm:h-6 text-indigo-500" />
               </div>
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>24</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Days Left</p>
-          </div>
+          </div> */}
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6 overflow-x-auto">
           <button
             onClick={() => setActiveTab('devices')}
-            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap ${
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'devices'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                 : darkMode
@@ -360,7 +334,7 @@ export default function StudentDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('activity')}
-            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap ${
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'activity'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                 : darkMode
@@ -370,25 +344,72 @@ export default function StudentDashboard() {
           >
             Recent Activity
           </button>
+          {/* Add Device Button */}
+          <div className="ml-auto">
+            <button
+              onClick={() => setShowRegister(true)}
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 sm:px-6 py-2.5 cursor-pointer sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              Register New Device
+            </button>
+          </div>   
         </div>
+
+        {/* Device Filter - only show in devices tab */}
+        {activeTab === 'devices' && (
+          <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto">
+            <button
+              onClick={() => setDeviceFilter('all')}
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap border ${darkMode ? 'border-gray-800' : 'border-gray-300'}  cursor-pointer ${
+                deviceFilter === 'all'
+                  ? darkMode
+                    ? 'bg-white/10 text-white border border-white/20'
+                    : 'bg-white text-gray-900 border border-gray-300 shadow-sm'
+                  : darkMode
+                  ? 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/40'
+              }`}
+            >
+              All Devices
+            </button>
+            <button
+              onClick={() => setDeviceFilter('active')}
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap border ${darkMode ? 'border-gray-800' : 'border-gray-300'}  border-gray-300  cursor-pointer ${
+                deviceFilter === 'active'
+                  ? darkMode
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                  : darkMode
+                  ? 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/40'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setDeviceFilter('pending')}
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap border ${darkMode ? 'border-gray-800' : 'border-gray-300'}  border-gray-300 cursor-pointer ${
+                deviceFilter === 'pending'
+                  ? darkMode
+                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                    : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                  : darkMode
+                  ? 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/40'
+              }`}
+            >
+              Pending
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         {activeTab === 'devices' ? (
           <div>
-            {/* Add Device Button */}
-            <div className="mb-4 sm:mb-6">
-              <button
-                onClick={() => setShowRegister(true)}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                Register New Device
-              </button>
-            </div>
-
             {/* Devices List */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {devices.map((device) => (
+              {devices.filter(device => deviceFilter === 'all' || device.status === deviceFilter).map((device) => (
                 <div key={device.id} className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
                   <div className="flex items-start justify-between mb-4 gap-2">
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -408,13 +429,21 @@ export default function StudentDashboard() {
                     </span>
                   </div>
 
-                  {device.status === 'active' && (
+                 {device.status === 'active' && (
                     <>
                       <div className="mb-4 p-3 sm:p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-lg sm:rounded-xl border border-blue-500/20">
                         <div className="flex items-center justify-center mb-2 sm:mb-3">
-                          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-lg sm:rounded-xl p-2 flex items-center justify-center">
-                            <QrCode className="w-full h-full text-gray-900" />
-                          </div>
+                          {qrCodes[device.id] ? (
+                            <img 
+                              src={qrCodes[device.id]} 
+                              alt={`QR Code for ${device.brand} ${device.model}`}
+                              className="w-32 h-32 sm:w-40 sm:h-40 bg-white rounded-lg sm:rounded-xl p-2"
+                            />
+                          ) : (
+                            <div className="w-32 h-32 sm:w-40 sm:h-40 bg-white rounded-lg sm:rounded-xl p-2 flex items-center justify-center">
+                              <RefreshCw className="w-8 h-8 text-gray-400 animate-spin" />
+                            </div>
+                          )}
                         </div>
                         <p className={`text-xs text-center ${textMuted}`}>
                           Scan this QR code at campus gates
@@ -433,7 +462,15 @@ export default function StudentDashboard() {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                        <button className={`flex-1 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} flex items-center justify-center gap-2`}>
+                        <button 
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.download = `${device.brand}-${device.model}-QR.png`;
+                            link.href = qrCodes[device.id];
+                            link.click();
+                          }}
+                          className={`flex-1 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} flex items-center justify-center gap-2`}
+                        >
                           <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           <span className="hidden sm:inline">Download QR</span>
                           <span className="sm:hidden">Download</span>
