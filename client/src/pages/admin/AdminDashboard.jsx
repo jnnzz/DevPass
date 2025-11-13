@@ -245,6 +245,7 @@ export default function AdminDashboard() {
       device.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       device.studentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       device.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      // personnel.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       device.model.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
@@ -382,9 +383,9 @@ export default function AdminDashboard() {
         <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6 overflow-x-auto">
           <button
             onClick={() => setActiveTab('pending')}
-            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap ${
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base  transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'pending'
-                ? 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white shadow-lg'
+                ? ` ${darkMode ? 'bg-yellow-500/20' : 'bg-yellow-100'} ${darkMode ? 'text-yellow-400' : 'text-yellow-600'} shadow-lg`
                 : darkMode
                 ? 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-white/60'
@@ -394,9 +395,9 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('active')}
-            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap ${
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'active'
-                ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg'
+                ? `${darkMode ? 'bg-emerald-500/20' : 'bg-emerald-100'} ${darkMode ? 'text-emerald-400' : 'text-emerald-600'} shadow-lg`
                 : darkMode
                 ? 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-white/60'
@@ -406,7 +407,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap ${
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'all'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                 : darkMode
@@ -418,7 +419,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('scans')}
-            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap ${
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'scans'
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                 : darkMode
