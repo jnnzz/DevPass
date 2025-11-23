@@ -23,7 +23,10 @@ export const deviceAPI = {
 
 export const qrAPI = {
     generate: (deviceId) => api.post('/qr/generate', { device_id: deviceId }),
-    validate: (qrHash) => api.post('/qr/validate', { qr_hash: qrHash }),
+    validate: (qrData, gateName = null) => api.post('/qr/validate', { 
+        qr_data: qrData,
+        gate_name: gateName 
+    }),
 };
 
 export default api;

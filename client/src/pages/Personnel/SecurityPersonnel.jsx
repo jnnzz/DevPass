@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import jsQR from 'jsqr';
 import { 
   QrCode, 
   Shield, 
@@ -18,75 +20,166 @@ import {
   MapPin,
   TrendingUp,
   Activity,
-  CameraOff
+  CameraOff,
+  Loader2
 } from 'lucide-react';
+import { securityService } from '../../services/securityService';
+import authService from '../../services/authService';
 
-function ScanResultModal({ result, darkMode, onClose }) {
+function ScanResultModal({ result, darkMode, onClose, onAccept, onDeny, gate, processing = false }) {
   const textPrimary = darkMode ? 'text-white' : 'text-gray-900';
   const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
 
-  const isSuccess = result.status === 'success';
-  const statusColor = isSuccess 
-    ? darkMode ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-50 border-emerald-200'
-    : darkMode ? 'bg-red-500/20 border-red-500/40' : 'bg-red-50 border-red-200';
+  const isValidQR = result.valid === true;
+  const studentData = result.student_data || result.student || {};
+  const deviceData = result.device || {};
+  const showDecision = result.showDecision === true;
+  const decision = result.decision;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className={`${darkMode ? 'bg-black border-white/10' : 'bg-white border-gray-200'} border rounded-2xl w-full max-w-md shadow-2xl`}>
-        <div className="p-6 text-center">
-          <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${statusColor} border-2`}>
-            {isSuccess ? (
+      <div className={`${darkMode ? 'bg-black border-white/10' : 'bg-white border-gray-200'} border rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto`}>
+        <div className="p-6">
+          {isValidQR ? (
+            <>
+              {/* Valid QR Code - Show Student Info */}
+              <div className="text-center mb-6">
+                {showDecision ? (
+                  <>
+                    <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${decision === 'accepted' ? (darkMode ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-50 border-emerald-200') : (darkMode ? 'bg-red-500/20 border-red-500/40' : 'bg-red-50 border-red-200')} border-2`}>
+                      {decision === 'accepted' ? (
               <CheckCircle className={`w-10 h-10 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
             ) : (
               <XCircle className={`w-10 h-10 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
             )}
           </div>
-
+                    <h2 className={`text-2xl font-bold mb-2 ${textPrimary}`}>
+                      {decision === 'accepted' ? 'Access Granted' : 'Access Denied'}
+                    </h2>
+                    <p className={`text-sm ${textSecondary}`}>
+                      {decision === 'accepted' ? 'Student access has been approved' : 'Student access has been denied'}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${darkMode ? 'bg-blue-500/20 border-blue-500/40' : 'bg-blue-50 border-blue-200'} border-2`}>
+                      <QrCode className={`w-10 h-10 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                    </div>
           <h2 className={`text-2xl font-bold mb-2 ${textPrimary}`}>
-            {isSuccess ? 'Access Granted ✓' : 'Access Denied ✗'}
+                      QR Code Scanned
           </h2>
-          <p className={`text-sm mb-6 ${textSecondary}`}>
-            {result.message}
+                    <p className={`text-sm ${textSecondary}`}>
+                      Review student information and decide access
           </p>
+                  </>
+                )}
+              </div>
 
-          {isSuccess && result.data && (
+              {/* Student Information */}
+              {studentData && (
             <div className={`p-4 rounded-xl mb-6 text-left ${darkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <h3 className={`text-lg font-semibold ${textPrimary} mb-4`}>Student Information</h3>
               <div className="space-y-3">
+                    {studentData.student_name && (
+                      <div className="flex items-center gap-3">
+                        <User className={`w-5 h-5 ${textSecondary}`} />
+                        <div className="flex-1">
+                          <p className={`text-xs ${textSecondary}`}>Name</p>
+                          <p className={`font-semibold ${textPrimary}`}>{studentData.student_name}</p>
+                        </div>
+                      </div>
+                    )}
+                    {studentData.student_id && (
+                      <div className="flex items-center gap-3">
+                        <User className={`w-5 h-5 ${textSecondary}`} />
+                        <div className="flex-1">
+                          <p className={`text-xs ${textSecondary}`}>Student ID</p>
+                          <p className={`font-semibold ${textPrimary}`}>{studentData.student_id}</p>
+                        </div>
+                      </div>
+                    )}
+                    {studentData.student_department && (
+                      <div className="flex items-center gap-3">
+                        <User className={`w-5 h-5 ${textSecondary}`} />
+                        <div className="flex-1">
+                          <p className={`text-xs ${textSecondary}`}>Department</p>
+                          <p className={`font-semibold ${textPrimary}`}>{studentData.student_department}</p>
+                        </div>
+                      </div>
+                    )}
+                    {studentData.student_course && (
                 <div className="flex items-center gap-3">
                   <User className={`w-5 h-5 ${textSecondary}`} />
                   <div className="flex-1">
-                    <p className={`text-xs ${textSecondary}`}>Student Name</p>
-                    <p className={`font-semibold ${textPrimary}`}>{result.data.name}</p>
+                          <p className={`text-xs ${textSecondary}`}>Course</p>
+                          <p className={`font-semibold ${textPrimary}`}>{studentData.student_course}</p>
                   </div>
                 </div>
+                    )}
+                    {deviceData.brand && deviceData.model && (
                 <div className="flex items-center gap-3">
                   <Laptop className={`w-5 h-5 ${textSecondary}`} />
                   <div className="flex-1">
                     <p className={`text-xs ${textSecondary}`}>Device</p>
-                    <p className={`font-semibold ${textPrimary}`}>{result.data.device}</p>
+                          <p className={`font-semibold ${textPrimary}`}>{deviceData.brand} {deviceData.model}</p>
                   </div>
                 </div>
+                    )}
+                    {deviceData.device_type && (
                 <div className="flex items-center gap-3">
-                  <Clock className={`w-5 h-5 ${textSecondary}`} />
+                        <Laptop className={`w-5 h-5 ${textSecondary}`} />
                   <div className="flex-1">
-                    <p className={`text-xs ${textSecondary}`}>QR Valid Until</p>
-                    <p className={`font-semibold ${textPrimary}`}>{result.data.expiryDate}</p>
+                          <p className={`text-xs ${textSecondary}`}>Device Type</p>
+                          <p className={`font-semibold ${textPrimary}`}>{deviceData.device_type}</p>
                   </div>
                 </div>
+                    )}
               </div>
             </div>
           )}
 
+              {/* Accept/Deny Buttons - Only show if decision not made yet */}
+              {!showDecision && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={onDeny}
+                    disabled={processing}
+                    className="flex-1 py-3 rounded-lg font-semibold transition-all bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {processing ? 'Processing...' : 'Denied'}
+                  </button>
+                  <button
+                    onClick={onAccept}
+                    disabled={processing}
+                    className="flex-1 py-3 rounded-lg font-semibold transition-all bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {processing ? 'Processing...' : 'Accept'}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Invalid QR Code - Show Error */}
+              <div className="text-center">
+                <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${darkMode ? 'bg-red-500/20 border-red-500/40' : 'bg-red-50 border-red-200'} border-2`}>
+                  <XCircle className={`w-10 h-10 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
+                </div>
+                <h2 className={`text-2xl font-bold mb-2 ${textPrimary}`}>
+                  Invalid QR Code
+                </h2>
+                <p className={`text-base mb-6 ${textSecondary}`}>
+                  {result.message || 'QR code is not from the DevPass system. Please ensure you are scanning a valid student device QR code.'}
+                </p>
           <button
             onClick={onClose}
-            className={`w-full py-3 rounded-lg font-semibold transition-all ${
-              isSuccess
-                ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700'
-                : 'bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700'
-            }`}
+                  className="w-full py-3 rounded-lg font-semibold transition-all bg-gradient-to-r from-gray-600 to-gray-700 text-white hover:from-gray-700 hover:to-gray-800"
           >
             Close
           </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -94,56 +187,26 @@ function ScanResultModal({ result, darkMode, onClose }) {
 }
 
 export default function SecurityPersonnel() {
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
-  const [gate, setGate] = useState('Main Gate');
+  const [gate, setGate] = useState('Gate 1');
   const [cameraError, setCameraError] = useState(null);
   const [stream, setStream] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [processingDecision, setProcessingDecision] = useState(false);
+  const [scanHistory, setScanHistory] = useState([]);
+  const [stats, setStats] = useState({
+    scansToday: 0,
+    successRate: 0,
+    lastHour: 0
+  });
+  
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-
-  // Mock scan history
-  const [scanHistory, setScanHistory] = useState([
-    { 
-      id: 1,
-      studentName: "Juan Dela Cruz",
-      studentId: "STU123456",
-      device: "Dell XPS 15",
-      time: "10:45 AM",
-      status: "success"
-    },
-    { 
-      id: 2,
-      studentName: "Maria Santos",
-      studentId: "STU123457",
-      device: "MacBook Pro M2",
-      time: "10:30 AM",
-      status: "success"
-    },
-    { 
-      id: 3,
-      studentName: "Pedro Garcia",
-      studentId: "STU123458",
-      device: "HP Pavilion",
-      time: "10:15 AM",
-      status: "success"
-    },
-    { 
-      id: 4,
-      studentName: "Unknown User",
-      studentId: "N/A",
-      device: "N/A",
-      time: "10:00 AM",
-      status: "failed"
-    }
-  ]);
-
-  const [stats, setStats] = useState({
-    scansToday: 47,
-    successRate: 96,
-    lastHour: 12
-  });
+  const scanIntervalRef = useRef(null);
+  const isScanningRef = useRef(false);
 
   const bgClass = darkMode 
     ? 'bg-black text-white' 
@@ -161,11 +224,79 @@ export default function SecurityPersonnel() {
   const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
   const textMuted = darkMode ? 'text-gray-500' : 'text-gray-500';
 
+  // Check authentication
+  useEffect(() => {
+    if (!authService.isAuthenticated() || !authService.isSecurity()) {
+      navigate('/');
+    } else {
+      loadData();
+    }
+  }, [navigate]);
+
+  // Load data when gate changes
+  useEffect(() => {
+    if (authService.isAuthenticated()) {
+      loadData();
+    }
+  }, [gate]);
+
+  // Load statistics and recent scans
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [statsData, activitiesData] = await Promise.all([
+        securityService.getStatistics(gate),
+        securityService.getRecentScans(50, gate)
+      ]);
+      
+      setStats(statsData);
+      
+      // Format activities for display
+      const formattedActivities = activitiesData.map(activity => ({
+        id: activity.id,
+        studentName: activity.student?.name || activity.student_data?.student_name || 'Unknown',
+        studentId: activity.student?.id || activity.student_data?.student_id || 'N/A',
+        device: activity.device 
+          ? `${activity.device.brand} ${activity.device.model}` 
+          : activity.student_data?.device_brand && activity.student_data?.device_model
+          ? `${activity.student_data.device_brand} ${activity.student_data.device_model}`
+          : 'N/A',
+        time: activity.scanned_at 
+          ? new Date(activity.scanned_at).toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })
+          : new Date(activity.created_at).toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+        status: activity.status === 'success' ? 'success' : 'failed' // Map 'denied', 'failed', 'expired' to 'failed'
+      }));
+      
+      setScanHistory(formattedActivities);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        await authService.logout();
+        navigate('/');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Cleanup camera stream on unmount or when scanning stops
   useEffect(() => {
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
+      }
+      if (scanIntervalRef.current) {
+        if (typeof scanIntervalRef.current === 'number') {
+          cancelAnimationFrame(scanIntervalRef.current);
+        } else {
+          clearInterval(scanIntervalRef.current);
+        }
       }
     };
   }, [stream]);
@@ -174,13 +305,14 @@ export default function SecurityPersonnel() {
     try {
       setCameraError(null);
       setIsScanning(true);
+      isScanningRef.current = true;
 
-      // Request camera access
+      // Request camera access with lower resolution for faster processing
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment', // Use back camera on mobile
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 640 }, // Lower resolution for faster processing
+          height: { ideal: 480 }
         }
       });
 
@@ -188,72 +320,320 @@ export default function SecurityPersonnel() {
 
       // Set video stream
       if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play();
-      }
+        const video = videoRef.current;
+        video.srcObject = mediaStream;
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('autoplay', 'true');
+        video.setAttribute('muted', 'true');
+        
+        // Wait for video to be ready before starting scan
+        const onVideoReady = () => {
+          video.play().then(() => {
+            console.log('Video playing, starting scan...');
+            // Wait a bit for video to stabilize, then start scanning
+            setTimeout(() => {
+              if (isScanningRef.current && videoRef.current) {
+                startQRScanning();
+              }
+            }, 200);
+          }).catch(err => {
+            console.error('Video play error:', err);
+            setCameraError('Failed to start video feed');
+            setIsScanning(false);
+            isScanningRef.current = false;
+          });
+        };
 
-      // Simulate QR detection after camera starts
-      setTimeout(() => {
-        captureAndProcessQR();
-      }, 3000);
+        // Try multiple ways to detect when video is ready
+        if (video.readyState >= 2) {
+          onVideoReady();
+        } else {
+          video.onloadedmetadata = onVideoReady;
+          video.oncanplay = () => {
+            if (isScanningRef.current && !scanIntervalRef.current) {
+              onVideoReady();
+            }
+          };
+        }
+
+        // Handle video errors
+        video.onerror = (err) => {
+          console.error('Video error:', err);
+          setCameraError('Failed to load video feed');
+          setIsScanning(false);
+          isScanningRef.current = false;
+        };
+      }
 
     } catch (error) {
       console.error('Camera access error:', error);
       setCameraError('Unable to access camera. Please check permissions.');
       setIsScanning(false);
+      isScanningRef.current = false;
+    }
+  };
+
+  const startQRScanning = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      console.warn('Video or canvas ref not available');
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Make sure canvas is initialized
+    if (!canvas.getContext) {
+      console.error('Canvas context not available');
+      return;
+    }
+
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+
+    // Use requestAnimationFrame for smoother, faster scanning
+    const scan = () => {
+      // Check if scanning was stopped
+      if (!isScanningRef.current || !video) {
+        return;
+      }
+
+      // Wait for video to have data
+      if (video.readyState < video.HAVE_CURRENT_DATA) {
+        scanIntervalRef.current = requestAnimationFrame(scan);
+        return;
+      }
+
+      try {
+        // Get video dimensions
+        const videoWidth = video.videoWidth || video.clientWidth || 640;
+        const videoHeight = video.videoHeight || video.clientHeight || 480;
+        
+        if (!videoWidth || !videoHeight || videoWidth === 0 || videoHeight === 0) {
+          scanIntervalRef.current = requestAnimationFrame(scan);
+          return;
+        }
+
+        // Set canvas size to match video or reasonable size (max 400px for speed)
+        const maxSize = 400;
+        let canvasWidth, canvasHeight;
+        
+        if (videoWidth <= maxSize && videoHeight <= maxSize) {
+          // Use actual video size if it's small enough
+          canvasWidth = videoWidth;
+          canvasHeight = videoHeight;
+        } else {
+          // Scale down proportionally
+          const scale = Math.min(maxSize / videoWidth, maxSize / videoHeight);
+          canvasWidth = Math.floor(videoWidth * scale);
+          canvasHeight = Math.floor(videoHeight * scale);
+        }
+
+        // Update canvas dimensions if needed
+        if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+          canvas.width = canvasWidth;
+          canvas.height = canvasHeight;
+        }
+
+        // Draw full video frame to canvas
+        context.imageSmoothingEnabled = false; // Faster processing
+        context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+        
+        // Get image data
+        const imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
+        
+        if (!imageData || !imageData.data || imageData.data.length === 0) {
+          scanIntervalRef.current = requestAnimationFrame(scan);
+          return;
+        }
+
+        // Use jsQR to detect QR code
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (code && code.data) {
+          console.log('QR code detected:', code.data.substring(0, 50));
+          // QR code detected - stop scanning immediately
+          if (scanIntervalRef.current) {
+            cancelAnimationFrame(scanIntervalRef.current);
+            scanIntervalRef.current = null;
+          }
+          isScanningRef.current = false;
+          stopCamera();
+          handleQRScanned(code.data);
+          return;
+        }
+      } catch (error) {
+        console.error('Scan error:', error);
+        // Continue scanning even on error
+      }
+
+      // Continue scanning
+      scanIntervalRef.current = requestAnimationFrame(scan);
+    };
+
+    // Start scanning loop immediately
+    console.log('Starting QR scan loop...');
+    scanIntervalRef.current = requestAnimationFrame(scan);
+  };
+
+  const handleQRScanned = async (qrData) => {
+    // Stop scanning
+    stopCamera();
+    
+    try {
+      // Clean the QR data (remove whitespace)
+      const hash = qrData.trim();
+      console.log('Scanned QR hash:', hash.substring(0, 20) + '...');
+      
+      // First, try to read QR code to get student info (doesn't log activity)
+      const readResult = await securityService.readQR(hash);
+      
+      // Store the hash in the result for accept/deny actions
+      if (readResult.valid) {
+        setScanResult({
+          ...readResult,
+          qr_hash: hash // Store hash for accept/deny actions
+        });
+      } else {
+        // QR not found in system - show error
+        setScanResult({
+          valid: false,
+          message: 'QR code is not from the DevPass system. This QR code is not registered in our database.',
+          student_data: null
+        });
+      }
+      
+    } catch (error) {
+      console.error('QR read error:', error);
+      setScanResult({
+        valid: false,
+        message: error.response?.data?.message || 'QR code is not from the DevPass system. This QR code is not registered in our database.',
+        student_data: null
+      });
+    }
+  };
+
+  const handleAccept = async () => {
+    if (!scanResult || !scanResult.valid || processingDecision) return;
+    
+    setProcessingDecision(true);
+    try {
+      // Get the hash from stored result - check multiple possible locations
+      const qrHash = scanResult.qr_hash || scanResult.device?.qr_hash;
+      
+      console.log('Accept - scanResult:', scanResult);
+      console.log('Accept - qrHash:', qrHash);
+      
+      if (!qrHash) {
+        console.error('No QR hash found in result:', scanResult);
+        alert('Unable to find QR code hash. Please scan again.');
+        setScanResult(null);
+        setProcessingDecision(false);
+        return;
+      }
+      
+      // Validate and log as accepted
+      const result = await securityService.validateQR(qrHash.trim(), gate);
+      
+      console.log('Accept result:', result);
+      
+      // Show success message
+      setScanResult({
+        ...result,
+        decision: 'accepted',
+        showDecision: true
+      });
+      
+      // Reload data to update statistics and history
+      await loadData();
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setScanResult(null);
+        setProcessingDecision(false);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Accept error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to process acceptance. Please try again.';
+      alert(errorMessage);
+      setProcessingDecision(false);
+    }
+  };
+
+  const handleDeny = async () => {
+    if (!scanResult || !scanResult.valid || processingDecision) return;
+    
+    setProcessingDecision(true);
+    try {
+      // Get the hash from stored result - check multiple possible locations
+      const qrHash = scanResult.qr_hash || scanResult.device?.qr_hash;
+      
+      console.log('Deny - scanResult:', scanResult);
+      console.log('Deny - qrHash:', qrHash);
+      
+      if (!qrHash) {
+        console.error('No QR hash found in result:', scanResult);
+        alert('Unable to find QR code hash. Please scan again.');
+        setScanResult(null);
+        setProcessingDecision(false);
+        return;
+      }
+      
+      // Log as denied
+      const result = await securityService.denyAccess(qrHash.trim(), gate);
+      
+      console.log('Deny result:', result);
+      
+      // Check if the deny was successful
+      if (result.success === false) {
+        throw new Error(result.message || 'Failed to process denial');
+      }
+      
+      // Show denied message but keep student info visible
+      setScanResult({
+        ...scanResult,
+        decision: 'denied',
+        showDecision: true
+      });
+      
+      // Reload data to update statistics and history
+      await loadData();
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setScanResult(null);
+        setProcessingDecision(false);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Deny error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to process denial. Please try again.';
+      alert(errorMessage);
+      setProcessingDecision(false);
     }
   };
 
   const stopCamera = () => {
+    // Cancel animation frame if using requestAnimationFrame
+    if (scanIntervalRef.current) {
+      if (typeof scanIntervalRef.current === 'number') {
+        cancelAnimationFrame(scanIntervalRef.current);
+      } else {
+        clearInterval(scanIntervalRef.current);
+      }
+      scanIntervalRef.current = null;
+    }
+    
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
+      videoRef.current.onloadedmetadata = null;
     }
     setIsScanning(false);
-  };
-
-  const captureAndProcessQR = () => {
-    // In a real implementation, you would use a QR code detection library here
-    // For demo purposes, we'll simulate a scan result
-    const isSuccess = Math.random() > 0.2;
-    
-    const result = isSuccess ? {
-      status: 'success',
-      message: 'Device verified successfully',
-      data: {
-        name: 'Juan Dela Cruz',
-        studentId: 'STU123456',
-        device: 'Dell XPS 15',
-        expiryDate: '2025-11-14'
-      }
-    } : {
-      status: 'failed',
-      message: 'Invalid or expired QR code'
-    };
-
-    setScanResult(result);
-    stopCamera();
-
-    // Add to history
-    const newScan = {
-      id: Date.now(),
-      studentName: result.data?.name || 'Unknown User',
-      studentId: result.data?.studentId || 'N/A',
-      device: result.data?.device || 'N/A',
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      status: result.status
-    };
-    setScanHistory([newScan, ...scanHistory.slice(0, 9)]);
-
-    // Update stats
-    setStats(prev => ({
-      scansToday: prev.scansToday + 1,
-      successRate: Math.round((prev.scansToday * prev.successRate + (isSuccess ? 100 : 0)) / (prev.scansToday + 1)),
-      lastHour: prev.lastHour + 1
-    }));
+    isScanningRef.current = false;
   };
 
   const handleScan = () => {
@@ -263,6 +643,19 @@ export default function SecurityPersonnel() {
       startCamera();
     }
   };
+
+  const handleLogout = async () => {
+    await authService.logout();
+    navigate('/');
+  };
+
+  if (loading && scanHistory.length === 0) {
+    return (
+      <div className={`min-h-screen ${bgClass} flex items-center justify-center`}>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${bgClass} transition-colors duration-500`}>
@@ -305,7 +698,10 @@ export default function SecurityPersonnel() {
               <button className={`hidden sm:block p-2 rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
                 <Settings className={`w-5 h-5 ${textSecondary}`} />
               </button>
-              <button className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}>
+              <button 
+                onClick={handleLogout}
+                className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}
+              >
                 <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
@@ -327,10 +723,10 @@ export default function SecurityPersonnel() {
               onChange={(e) => setGate(e.target.value)}
               className={`text-sm sm:text-base ${textSecondary} bg-transparent border-none focus:outline-none cursor-pointer`}
             >
-              <option value="Main Gate">Main Gate</option>
-              <option value="Engineering Gate">Engineering Gate</option>
-              <option value="CCS Gate">CCS Gate</option>
-              <option value="Library Gate">Library Gate</option>
+              <option value="Gate 1">Gate 1</option>
+              <option value="Gate 2">Gate 2</option>
+              <option value="Gate 3">Gate 3</option>
+              <option value="Gate 4">Gate 4</option>
             </select>
           </div>
         </div>
@@ -391,9 +787,15 @@ export default function SecurityPersonnel() {
                     className="absolute inset-0 w-full h-full object-cover"
                     playsInline
                     muted
+                    autoPlay
                   />
-                  {/* Canvas for QR detection (hidden) */}
-                  <canvas ref={canvasRef} className="hidden" />
+                  {/* Canvas for QR detection (hidden but properly sized) */}
+                  <canvas 
+                    ref={canvasRef} 
+                    style={{ display: 'none' }}
+                    width="400"
+                    height="400"
+                  />
                   
                   {/* Scanning Overlay */}
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -466,6 +868,16 @@ export default function SecurityPersonnel() {
         {/* Recent Scans */}
         <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6`}>
           <h3 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-4 sm:mb-6`}>Recent Scans</h3>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : scanHistory.length === 0 ? (
+            <div className="text-center py-12">
+              <Activity className={`w-16 h-16 mx-auto mb-4 ${textSecondary}`} />
+              <p className={`text-sm sm:text-base ${textSecondary}`}>No scans yet</p>
+            </div>
+          ) : (
           <div className="space-y-3 sm:space-y-4">
             {scanHistory.map((scan) => (
               <div key={scan.id} className={`flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/5' : 'hover:bg-white/60'}`}>
@@ -500,6 +912,7 @@ export default function SecurityPersonnel() {
               </div>
             ))}
           </div>
+          )}
         </div>
       </div>
 
@@ -508,14 +921,18 @@ export default function SecurityPersonnel() {
         <ScanResultModal
           result={scanResult}
           darkMode={darkMode}
+          gate={gate}
+          processing={processingDecision}
           onClose={() => setScanResult(null)}
+          onAccept={handleAccept}
+          onDeny={handleDeny}
         />
       )}
 
       <style jsx>{`
         @keyframes scan {
           0% { transform: translateY(0); }
-          50% { transform: translateY(100vh); }
+          50% { transform: translateY(100%); }
           100% { transform: translateY(0); }
         }
         .animate-scan {
