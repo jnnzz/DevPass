@@ -35,4 +35,12 @@ class Student extends Authenticatable
     {
         $this->attributes['password'] = bcrypt($value);
     }
+
+    /**
+     * Get the devices for the student
+     */
+    public function devices()
+    {
+        return $this->hasMany(Device::class, 'student_id', 'pkStudentID');
+    }
 }

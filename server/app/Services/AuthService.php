@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -34,51 +35,68 @@ class AuthService
     }
 
     /**
-     * Login a student
+     * Login a student, admin, or security guard
      */
     public function login(array $credentials)
     {
-        // Find student by email
-        $student = Student::where('id', $credentials['id'])->first();
-
-        // Check if student exists and password is correct
-        if (!$student || !Hash::check($credentials['password'], $student->password)) {
-            throw ValidationException::withMessages([
-                'id' => ['The provided credentials are incorrect.'],
-            ]);
+        $identifier = $credentials['id']; // Can be student ID or email
+        
+        // Check if it's an email format (contains @)
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            // Try User model first (admin/security)
+            $user = User::where('email', $identifier)->first();
+            
+            if ($user && Hash::check($credentials['password'], $user->password)) {
+                $token = $user->createToken('auth-token')->plainTextToken;
+                
+                return [
+                    'user' => $user,
+                    'user_type' => 'admin', // or 'security' based on role
+                    'role' => $user->role,
+                    'token' => $token
+                ];
+            }
         }
-
-        // Delete old tokens (optional - for single device login)
-        // $student->tokens()->delete();
-
-        // Create new token
-        $token = $student->createToken('auth-token')->plainTextToken;
-
-        return [
-            'student' => $student,
-            'token' => $token
-        ];
+        
+        // Try Student model (by student ID)
+        $student = Student::where('id', $identifier)->first();
+        
+        if ($student && Hash::check($credentials['password'], $student->password)) {
+            $token = $student->createToken('auth-token')->plainTextToken;
+            
+            return [
+                'student' => $student,
+                'user_type' => 'student',
+                'role' => 'student',
+                'token' => $token
+            ];
+        }
+        
+        // If neither found, throw validation error
+        throw ValidationException::withMessages([
+            'id' => ['The provided credentials are incorrect.'],
+        ]);
     }
 
     /**
-     * Logout a student
+     * Logout a student, admin, or security guard
      */
-    public function logout(Student $student)
+    public function logout($user)
     {
         // Delete all tokens (logout from all devices)
-        $student->tokens()->delete();
+        $user->tokens()->delete();
 
         // Or delete only current token:
-        // $student->currentAccessToken()->delete();
+        // $user->currentAccessToken()->delete();
 
         return ['message' => 'Logged out successfully'];
     }
 
     /**
-     * Get authenticated student profile
+     * Get authenticated user profile (student, admin, or security)
      */
-    public function getProfile(Student $student)
+    public function getProfile($user)
     {
-        return $student;
+        return $user;
     }
 }

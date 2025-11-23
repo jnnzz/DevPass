@@ -21,14 +21,14 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'id' => 'required|string|min:6|max:8',
+            'id' => 'required|string|min:6|max:8|unique:students,id',
             'name' => 'required|string|max:100',
             'email' => 'required|email|unique:students,email',
             'password' => 'required|string|min:6|confirmed',
             'phone' => 'nullable|string|max:15',
             'department' => 'nullable|string|max:50',
-            'course' => 'nullable|string|max:100',
-            'year_of_study' => 'nullable|integer',
+            'course' => 'required|string|max:100',
+            'year_of_study' => 'nullable|integer|min:1|max:10',
         ]);
 
         $result = $this->authService->register($validated);
@@ -41,22 +41,32 @@ class AuthController extends Controller
     }
 
     /**
-     * Login student
+     * Login student, admin, or security guard
      */
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'id' => 'required|string',
+            'id' => 'required|string', // Can be student ID or email
             'password' => 'required|string',
         ]);
 
         $result = $this->authService->login($credentials);
 
-        return response()->json([
+        $response = [
             'message' => 'Login successful',
-            'student' => $result['student'],
-            'token' => $result['token']
-        ]);
+            'token' => $result['token'],
+            'user_type' => $result['user_type'],
+            'role' => $result['role'],
+        ];
+
+        // Include user or student based on type
+        if ($result['user_type'] === 'student') {
+            $response['student'] = $result['student'];
+        } else {
+            $response['user'] = $result['user'];
+        }
+
+        return response()->json($response);
     }
 
     /**

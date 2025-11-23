@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { studentInfo, devices, recentActivity } from '../../data/mockData';
+import { useNavigate } from 'react-router-dom';
 import { useQRCode } from '../../hooks/useQRCode';
+import { authService } from '../../services/authService';
+import { deviceAPI } from '../../services/api';
 import { 
   QrCode, 
   Laptop, 
@@ -22,7 +24,7 @@ import {
   Upload
 } from 'lucide-react';
 
-function Register({ darkMode, onClose }) {
+function Register({ darkMode, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     deviceType: '',
     brand: '',
@@ -30,16 +32,32 @@ function Register({ darkMode, onClose }) {
     serialNumber: '',
     notes: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Device registered:', formData);
-    onClose();
+    setLoading(true);
+    setError('');
+    try {
+      const { deviceAPI } = await import('../../services/api');
+      await deviceAPI.create(formData);
+      console.log('Device registered:', formData);
+      onClose();
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err) {
+      console.error('Error registering device:', err);
+      setError(err.response?.data?.message || 'Failed to register device. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputBg = darkMode ? 'bg-black border-gray/20' : 'bg-white/60 border-gray/40';
@@ -152,19 +170,35 @@ function Register({ darkMode, onClose }) {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-red-500/20 border border-red-500/40' : 'bg-red-50 border border-red-200'}`}>
+              <p className={`text-sm ${darkMode ? 'text-red-400' : 'text-red-700'}`}>{error}</p>
+            </div>
+          )}
+
           {/* Buttons */}
           <div className="flex gap-3 pt-4">
             <button
               onClick={onClose}
-              className={`flex-1 px-4 py-2.5 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+              disabled={loading}
+              className={`flex-1 px-4 py-2.5 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} disabled:opacity-50`}
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              className="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Register Device
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                'Register Device'
+              )}
             </button>
           </div>
         </div>
@@ -174,11 +208,97 @@ function Register({ darkMode, onClose }) {
 }
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState('devices');
   const [showRegister, setShowRegister] = useState(false);
-  const [deviceFilter, setDeviceFilter] = useState('all'); // 'all', 'active', 'pending'  
+  const [deviceFilter, setDeviceFilter] = useState('all'); // 'all', 'active', 'pending'
+  
+  // State for real data
+  const [studentInfo, setStudentInfo] = useState(null);
+  const [devices, setDevices] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch student profile
+      const profile = await authService.getProfile();
+      setStudentInfo(profile);
+
+      // Fetch devices
+      const devicesResponse = await deviceAPI.getAll();
+      const devicesData = devicesResponse.data.map(device => ({
+        id: device.id,
+        type: device.device_type,
+        brand: device.brand,
+        model: device.model,
+        status: device.status,
+        qrExpiry: device.qr_expires_at ? new Date(device.qr_expires_at).toISOString().split('T')[0] : null,
+        lastScanned: device.last_scanned_at ? new Date(device.last_scanned_at).toLocaleString('en-US', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        }) : null,
+        serialNumber: device.serial_number,
+        notes: device.notes
+      }));
+      setDevices(devicesData);
+
+      // Fetch scan activity
+      try {
+        const scansResponse = await deviceAPI.getScanActivity();
+        const scansData = scansResponse.data.map(scan => ({
+          gate: scan.gate_name || 'Unknown Gate',
+          time: new Date(scan.scan_time).toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }),
+          status: scan.status,
+          device: `${scan.brand} ${scan.model}`
+        }));
+        setRecentActivity(scansData);
+      } catch (scanError) {
+        console.error('Error fetching scan activity:', scanError);
+        setRecentActivity([]);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err.response?.data?.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const qrCodes = useQRCode(devices, studentInfo);
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local storage and redirect even if API call fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('student');
+      navigate('/');
+    }
+  };
 
   const bgClass = darkMode 
     ? 'bg-black text-white' 
@@ -255,7 +375,11 @@ export default function StudentDashboard() {
               <button className={`hidden sm:block p-2 rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
                 <Settings className={`w-5 h-5 ${textSecondary}`} />
               </button>
-              <button className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}>
+              <button 
+                onClick={handleLogout}
+                className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}
+                title="Logout"
+              >
                 <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
@@ -268,7 +392,7 @@ export default function StudentDashboard() {
         {/* Welcome Section */}
         <div className="mb-6 sm:mb-8">
           <h2 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-2`}>
-            Welcome back, {studentInfo.name.split(' ')[0]}! 
+            Welcome back, {studentInfo ? (studentInfo.name ? studentInfo.name.split(' ')[0] : 'Student') : 'Student'}! 
           </h2>
           <p className={`text-sm sm:text-base ${textSecondary}`}>
             Manage your registered devices and track your campus entries
@@ -283,7 +407,7 @@ export default function StudentDashboard() {
                 <Laptop className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
               </div>
             </div>
-            <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>2</h3>
+            <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{devices.length}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Total Devices</p>
           </div>
 
@@ -293,7 +417,7 @@ export default function StudentDashboard() {
                 <CheckCircle className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
               </div>
             </div>
-            <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>1</h3>
+            <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{devices.filter(d => d.status === 'active').length}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Active Devices</p>
           </div>
 
@@ -303,7 +427,7 @@ export default function StudentDashboard() {
                 <Clock className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`} />
               </div>
             </div>
-            <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>1</h3>
+            <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{devices.filter(d => d.status === 'pending').length}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Pending</p>
           </div>
 
@@ -405,11 +529,184 @@ export default function StudentDashboard() {
         )}
 
         {/* Content */}
-        {activeTab === 'devices' ? (
+        {loading ? (
+          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center`}>
+            <RefreshCw className={`w-8 h-8 sm:w-12 sm:h-12 ${textSecondary} animate-spin mx-auto mb-4`} />
+            <p className={textSecondary}>Loading your data...</p>
+          </div>
+        ) : error ? (
+          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-6 sm:p-8`}>
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-red-500/20 border border-red-500/40' : 'bg-red-50 border border-red-200'}`}>
+              <p className={`${darkMode ? 'text-red-400' : 'text-red-700'}`}>{error}</p>
+              <button
+                onClick={fetchData}
+                className={`mt-4 px-4 py-2 rounded-lg font-semibold ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : activeTab === 'devices' ? (
           <div>
             {/* Devices List */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {devices.filter(device => deviceFilter === 'all' || device.status === deviceFilter).map((device) => (
+            {deviceFilter === 'all' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {/* Active Devices Section */}
+                <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className={`text-lg font-bold ${textPrimary}`}>Active Devices</h3>
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
+                      <CheckCircle className="w-3 h-3" />
+                      {devices.filter(d => d.status === 'active').length}
+                    </span>
+                  </div>
+                  
+                  {devices.filter(d => d.status === 'active').length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="mb-4 p-3 sm:p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-lg sm:rounded-xl border border-blue-500/20">
+                        <div className="w-32 h-32 sm:w-40 sm:h-40 bg-white rounded-lg sm:rounded-xl mx-auto flex items-center justify-center">
+                          <QrCode className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300" />
+                        </div>
+                      </div>
+                      <p className={`text-sm ${textSecondary}`}>No active devices</p>
+                      <p className={`text-xs ${textMuted} mt-1`}>Register a device and wait for approval</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {devices.filter(d => d.status === 'active').map((device) => (
+                        <div key={device.id} className="border-b pb-4 last:border-b-0 last:pb-0" style={{borderColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}}>
+                          <div className="flex items-start justify-between mb-3 gap-2">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'} flex-shrink-0`}>
+                                <Laptop className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className={`text-sm font-bold ${textPrimary} truncate`}>
+                                  {device.brand} {device.model}
+                                </h4>
+                                <p className={`text-xs ${textSecondary}`}>{device.type}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mb-3 p-3 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-lg border border-blue-500/20">
+                            <div className="flex items-center justify-center mb-2">
+                              {qrCodes[device.id] ? (
+                                <img 
+                                  src={qrCodes[device.id]} 
+                                  alt={`QR Code for ${device.brand} ${device.model}`}
+                                  className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-lg p-2"
+                                />
+                              ) : (
+                                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-lg p-2 flex items-center justify-center">
+                                  <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
+                                </div>
+                              )}
+                            </div>
+                            <p className={`text-xs text-center ${textMuted}`}>
+                              Scan this QR code at campus gates
+                            </p>
+                          </div>
+
+                          <div className="space-y-1 mb-3">
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs ${textSecondary}`}>QR Expires:</span>
+                              <span className={`text-xs font-semibold ${textPrimary}`}>{device.qrExpiry || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs ${textSecondary}`}>Last Scanned:</span>
+                              <span className={`text-xs font-semibold ${textPrimary}`}>{device.lastScanned || 'Never'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => {
+                                if (qrCodes[device.id]) {
+                                  const link = document.createElement('a');
+                                  link.download = `${device.brand}-${device.model}-QR.png`;
+                                  link.href = qrCodes[device.id];
+                                  link.click();
+                                }
+                              }}
+                              disabled={!qrCodes[device.id]}
+                              className={`flex-1 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} flex items-center justify-center gap-1 disabled:opacity-50`}
+                            >
+                              <Download className="w-3 h-3" />
+                              Download
+                            </button>
+                            <button className={`flex-1 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all ${darkMode ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'} flex items-center justify-center gap-1`}>
+                              <RefreshCw className="w-3 h-3" />
+                              Renew
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pending Devices Section */}
+                <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className={`text-lg font-bold ${textPrimary}`}>Pending Devices</h3>
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${darkMode ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-700'}`}>
+                      <Clock className="w-3 h-3" />
+                      {devices.filter(d => d.status === 'pending').length}
+                    </span>
+                  </div>
+                  
+                  {devices.filter(d => d.status === 'pending').length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className={`p-3 sm:p-4 rounded-lg sm:rounded-xl ${darkMode ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-yellow-50 border border-yellow-200'} mb-4`}>
+                        <Clock className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto ${darkMode ? 'text-yellow-400/50' : 'text-yellow-600/50'}`} />
+                      </div>
+                      <p className={`text-sm ${textSecondary}`}>No pending devices</p>
+                      <p className={`text-xs ${textMuted} mt-1`}>Devices waiting for approval will appear here</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {devices.filter(d => d.status === 'pending').map((device) => (
+                        <div key={device.id} className="border-b pb-4 last:border-b-0 last:pb-0" style={{borderColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}}>
+                          <div className="flex items-start justify-between mb-3 gap-2">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'} flex-shrink-0`}>
+                                <Laptop className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className={`text-sm font-bold ${textPrimary} truncate`}>
+                                  {device.brand} {device.model}
+                                </h4>
+                                <p className={`text-xs ${textSecondary}`}>{device.type}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className={`p-3 rounded-lg ${darkMode ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-yellow-50 border border-yellow-200'}`}>
+                            <p className={`text-xs ${darkMode ? 'text-yellow-400' : 'text-yellow-700'} flex items-center gap-2`}>
+                              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                              Waiting for admin approval
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : devices.filter(device => device.status === deviceFilter).length === 0 ? (
+              <div className={`${cardBg} rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center`}>
+                <Laptop className={`w-12 h-12 sm:w-16 sm:h-16 ${textMuted} mx-auto mb-4`} />
+                <p className={`text-lg font-semibold ${textPrimary} mb-2`}>No {deviceFilter} devices found</p>
+                <p className={textSecondary}>
+                  {deviceFilter === 'active' 
+                    ? "You don't have any active devices yet. Register a device and wait for admin approval."
+                    : "You don't have any pending devices."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {devices.filter(device => device.status === deviceFilter).map((device) => (
                 <div key={device.id} className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
                   <div className="flex items-start justify-between mb-4 gap-2">
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -492,14 +789,22 @@ export default function StudentDashboard() {
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6`}>
             <h3 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-4 sm:mb-6`}>Entry History</h3>
-            <div className="space-y-3 sm:space-y-4">
-              {recentActivity.map((activity, index) => (
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className={`w-12 h-12 sm:w-16 sm:h-16 ${textMuted} mx-auto mb-4`} />
+                <p className={`text-lg font-semibold ${textPrimary} mb-2`}>No scan activity yet</p>
+                <p className={textSecondary}>Your entry history will appear here once you scan your device at campus gates.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 sm:space-y-4">
+                {recentActivity.map((activity, index) => (
                 <div key={index} className={`flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/5' : 'hover:bg-white/60'}`}>
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-emerald-500/20' : 'bg-emerald-100'} flex-shrink-0`}>
@@ -512,14 +817,24 @@ export default function StudentDashboard() {
                   </div>
                   <ChevronRight className={`w-4 h-4 sm:w-5 sm:h-5 ${textMuted} flex-shrink-0`} />
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* Register Modal */}
-      {showRegister && <Register darkMode={darkMode} onClose={() => setShowRegister(false)} />}
+      {showRegister && (
+        <Register 
+          darkMode={darkMode} 
+          onClose={() => setShowRegister(false)}
+          onSuccess={() => {
+            // Refresh devices after successful registration
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }

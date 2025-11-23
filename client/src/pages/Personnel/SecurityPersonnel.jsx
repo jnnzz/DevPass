@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { authService } from '../../services/authService';
 import { 
   QrCode, 
   Shield, 
@@ -94,6 +96,7 @@ function ScanResultModal({ result, darkMode, onClose }) {
 }
 
 export default function SecurityPersonnel() {
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
@@ -264,6 +267,21 @@ export default function SecurityPersonnel() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local storage and redirect even if API call fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('user_type');
+      localStorage.removeItem('role');
+      navigate('/');
+    }
+  };
+
   return (
     <div className={`min-h-screen ${bgClass} transition-colors duration-500`}>
       {/* Animated background elements */}
@@ -305,7 +323,11 @@ export default function SecurityPersonnel() {
               <button className={`hidden sm:block p-2 rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
                 <Settings className={`w-5 h-5 ${textSecondary}`} />
               </button>
-              <button className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}>
+              <button 
+                onClick={handleLogout}
+                className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}
+                title="Logout"
+              >
                 <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
