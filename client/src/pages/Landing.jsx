@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Lock, User, Zap, Shield, Rocket, Moon, Sun, Mail, GraduationCap, Calendar } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,17 @@ export default function Landing() {
   const [darkMode, setDarkMode] = useState(true);
   const navigate = useNavigate();
 
+  // Load remembered credentials on component mount
+  useEffect(() => {
+    const rememberedId = localStorage.getItem('remembered_id');
+    if (rememberedId) {
+      setFormData(prev => ({ ...prev, id: rememberedId }));
+      setRememberMe(true);
+    }
+  }, []);
+
   const [formData, setFormData] = useState({
+    id: '',
     name: '',
     email: '',
     course: '',
@@ -22,7 +32,9 @@ export default function Landing() {
   
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -35,6 +47,7 @@ export default function Landing() {
     e.preventDefault();
     setMessage('');
     setError('');
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -44,12 +57,28 @@ export default function Landing() {
           id: formData.id,
           password: formData.password,
         });
+        
+        // Handle remember me functionality
+        if (rememberMe) {
+          localStorage.setItem('remembered_id', formData.id);
+        } else {
+          localStorage.removeItem('remembered_id');
+        }
+        
         setMessage('✅ Login successful!');
         console.log('Logged in user:', result);
         
-        // Redirect to students page after successful login
+        // Redirect based on user type
         setTimeout(() => {
-          navigate('/student/dashboard');
+          if (result.user_type === 'student') {
+            navigate('/student/dashboard');
+          } else if (result.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else if (result.role === 'security') {
+            navigate('/personnel/dashboard');
+          } else {
+            navigate('/student/dashboard'); // Default fallback
+          }
         }, 1000);
         
       } else {
@@ -88,11 +117,31 @@ export default function Landing() {
             password: '',
             password_confirmation: '',
           });
+          setMessage('');
         }, 1500);
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.response?.data?.errors?.email?.[0] || 'Operation failed';
-      setError(`❌ ${errorMessage}`);
+      // Handle validation errors with field-specific messages
+      if (err.response?.data?.errors) {
+        const errors = err.response.data.errors;
+        const fieldErrorMap = {};
+        
+        // Map Laravel validation errors to field names
+        Object.keys(errors).forEach(key => {
+          const fieldName = key === 'password_confirmation' ? 'password_confirmation' : key;
+          fieldErrorMap[fieldName] = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+        });
+        
+        setFieldErrors(fieldErrorMap);
+        
+        // Show general error message if available
+        if (err.response?.data?.message) {
+          setError(`❌ ${err.response.data.message}`);
+        }
+      } else {
+        const errorMessage = err.response?.data?.message || 'Operation failed';
+        setError(`❌ ${errorMessage}`);
+      }
       console.error(err);
     } finally {
       setLoading(false);
@@ -224,7 +273,24 @@ export default function Landing() {
               {/* Toggle Buttons */}
               <div className={`flex gap-2 ${toggleBg} rounded-xl p-1 mb-8`}>
                 <button
-                  onClick={() => setIsLogin(true)}
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(true);
+                    setFormData({
+                      id: '',
+                      name: '',
+                      email: '',
+                      course: '',
+                      phone: '',
+                      department: '',
+                      year_of_study: '',
+                      password: '',
+                      password_confirmation: '',
+                    });
+                    setMessage('');
+                    setError('');
+                    setFieldErrors({});
+                  }}
                   className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 cursor-pointer ${
                     isLogin 
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
@@ -234,7 +300,24 @@ export default function Landing() {
                   Login
                 </button>
                 <button
-                  onClick={() => setIsLogin(false)}
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(false);
+                    setFormData({
+                      id: '',
+                      name: '',
+                      email: '',
+                      course: '',
+                      phone: '',
+                      department: '',
+                      year_of_study: '',
+                      password: '',
+                      password_confirmation: '',
+                    });
+                    setMessage('');
+                    setError('');
+                    setFieldErrors({});
+                  }}
                   className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
                     !isLogin 
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
@@ -258,13 +341,16 @@ export default function Landing() {
                           <input
                             name="name"
                             type="text"
-                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.name ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                             placeholder="John Doe"
                             value={formData.name}
                             onChange={handleChange}
                             required
                           />
                         </div>
+                        {fieldErrors.name && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.name}</p>
+                        )}
                       </div>
 
                       <div>
@@ -276,13 +362,16 @@ export default function Landing() {
                           <input
                             name="course"
                             type="text"
-                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.course ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                             placeholder="Computer Science"
                             value={formData.course}
                             onChange={handleChange}
                             required
                           />
                         </div>
+                        {fieldErrors.course && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.course}</p>
+                        )}
                       </div>
 
                       {/* Phone */}
@@ -293,12 +382,15 @@ export default function Landing() {
                           <input
                             name="phone"
                             type="text"
-                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.phone ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                             placeholder="09123456789"
                             value={formData.phone}
                             onChange={handleChange}
                           />
                         </div>
+                        {fieldErrors.phone && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.phone}</p>
+                        )}
                       </div>
 
                       {/* Department */}
@@ -309,12 +401,15 @@ export default function Landing() {
                           <input
                             name="department"
                             type="text"
-                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.department ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                             placeholder="Engineering"
                             value={formData.department}
                             onChange={handleChange}
                           />
                         </div>
+                        {fieldErrors.department && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.department}</p>
+                        )}
                       </div>
 
                       {/* Year of Study */}
@@ -327,12 +422,15 @@ export default function Landing() {
                             type="number"
                             min="1"
                             max="10"
-                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.year_of_study ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                             placeholder="3"
                             value={formData.year_of_study}
                             onChange={handleChange}
                           />
                         </div>
+                        {fieldErrors.year_of_study && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.year_of_study}</p>
+                        )}
                       </div>
 
                       <div>
@@ -344,13 +442,16 @@ export default function Landing() {
                           <input
                             name="email"
                             type="email"
-                            className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.email ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                             placeholder="student@example.com"
                             value={formData.email}
                             onChange={handleChange}
                             required
                           />
                         </div>
+                        {fieldErrors.email && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.email}</p>
+                        )}
                       </div>
                     </>                 
                   )}
@@ -364,13 +465,16 @@ export default function Landing() {
                       <input
                         name="id"
                         type="text"
-                        className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.id ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="e.g., 23664035"
                         value={formData.id}
                         onChange={handleChange}
                         required
                       />
                     </div>
+                    {fieldErrors.id && (
+                      <p className="mt-1 text-sm text-red-500">{fieldErrors.id}</p>
+                    )}
                   </div>
 
                   <div>
@@ -382,7 +486,7 @@ export default function Landing() {
                       <input
                         name="password"
                         type={showPassword ? 'text' : 'password'}
-                        className={`w-full pl-12 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        className={`w-full pl-12 pr-12 py-3 ${inputBg} ${fieldErrors.password ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="••••••••"
                         value={formData.password}
                         onChange={handleChange}
@@ -396,6 +500,9 @@ export default function Landing() {
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
+                    {fieldErrors.password && (
+                      <p className="mt-1 text-sm text-red-500">{fieldErrors.password}</p>
+                    )}
                   </div>
 
                   {!isLogin && (
@@ -408,20 +515,28 @@ export default function Landing() {
                         <input
                           name="password_confirmation"
                           type={showPassword ? 'text' : 'password'}
-                          className={`w-full pl-12 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                          className={`w-full pl-12 pr-12 py-3 ${inputBg} ${fieldErrors.password_confirmation ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                           placeholder="••••••••"
                           value={formData.password_confirmation}
                           onChange={handleChange}
                           required
                         />
                       </div>
+                      {fieldErrors.password_confirmation && (
+                        <p className="mt-1 text-sm text-red-500">{fieldErrors.password_confirmation}</p>
+                      )}
                     </div>
                   )}
 
                   {isLogin && (
                     <div className="flex items-center justify-between">
                       <label className="flex items-center cursor-pointer gap-2">
-                        <input type="checkbox" className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600`} />
+                        <input 
+                          type="checkbox" 
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600 cursor-pointer`} 
+                        />
                         <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Remember me</span>
                       </label>
                       <a href="#" className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
@@ -457,7 +572,24 @@ export default function Landing() {
                 <p className={formDescText}>
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
                   <button
-                    onClick={() => setIsLogin(!isLogin)}
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setFormData({
+                        id: '',
+                        name: '',
+                        email: '',
+                        course: '',
+                        phone: '',
+                        department: '',
+                        year_of_study: '',
+                        password: '',
+                        password_confirmation: '',
+                      });
+                      setMessage('');
+                      setError('');
+                      setFieldErrors({});
+                    }}
                     className={`font-semibold cursor-pointer transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                   >
                     {isLogin ? 'Sign up' : 'Sign in'}

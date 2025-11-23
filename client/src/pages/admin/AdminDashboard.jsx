@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { adminService } from '../../services/adminService';
+import { authService } from '../../services/authService';
 import { 
   QrCode, 
   Users, 
@@ -22,7 +25,8 @@ import {
   Download,
   BarChart3,
   TrendingUp,
-  Activity
+  Activity,
+  RefreshCw
 } from 'lucide-react';
 
 function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) {
@@ -56,6 +60,14 @@ function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) 
                 <p className={`font-semibold ${textPrimary}`}>{device.studentId}</p>
               </div>
               <div>
+                <p className={`text-sm ${textSecondary}`}>Email</p>
+                <p className={`font-semibold ${textPrimary}`}>{device.studentEmail}</p>
+              </div>
+              <div>
+                <p className={`text-sm ${textSecondary}`}>Phone</p>
+                <p className={`font-semibold ${textPrimary}`}>{device.studentPhone}</p>
+              </div>
+              <div>
                 <p className={`text-sm ${textSecondary}`}>Department</p>
                 <p className={`font-semibold ${textPrimary}`}>{device.department}</p>
               </div>
@@ -63,6 +75,12 @@ function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) 
                 <p className={`text-sm ${textSecondary}`}>Course</p>
                 <p className={`font-semibold ${textPrimary}`}>{device.course}</p>
               </div>
+              {device.yearOfStudy && (
+                <div>
+                  <p className={`text-sm ${textSecondary}`}>Year of Study</p>
+                  <p className={`font-semibold ${textPrimary}`}>{device.yearOfStudy}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -95,6 +113,8 @@ function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) 
                 <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                   device.status === 'pending' 
                     ? darkMode ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-700'
+                    : device.status === 'rejected'
+                    ? darkMode ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700'
                     : darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
                 }`}>
                   {device.status.charAt(0).toUpperCase() + device.status.slice(1)}
@@ -139,75 +159,122 @@ function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) 
 }
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDevice, setSelectedDevice] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [devices, setDevices] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    active: 0,
+    scansToday: 0
+  });
+  const [recentScans, setRecentScans] = useState([]);
 
-  // Mock data
-  const [devices, setDevices] = useState([
-    {
-      id: 1,
-      studentName: "Juan Dela Cruz",
-      studentId: "STU123456",
-      department: "CCS",
-      course: "BSIT",
-      type: "Laptop",
-      brand: "Dell",
-      model: "XPS 15",
-      serialNumber: "DL123456789",
-      status: "pending",
-      registrationDate: "2025-10-14"
-    },
-    {
-      id: 2,
-      studentName: "Maria Santos",
-      studentId: "STU123457",
-      department: "CCS",
-      course: "BSCS",
-      type: "Laptop",
-      brand: "MacBook",
-      model: "Pro M2",
-      serialNumber: "MB987654321",
-      status: "pending",
-      registrationDate: "2025-10-14"
-    },
-    {
-      id: 3,
-      studentName: "Pedro Garcia",
-      studentId: "STU123458",
-      department: "Engineering",
-      course: "BSCpE",
-      type: "Laptop",
-      brand: "HP",
-      model: "Pavilion",
-      serialNumber: "HP456789123",
-      status: "active",
-      registrationDate: "2025-10-10",
-      qrExpiry: "2025-11-10"
-    },
-    {
-      id: 4,
-      studentName: "Ana Rodriguez",
-      studentId: "STU123459",
-      department: "CCS",
-      course: "BSIT",
-      type: "Laptop",
-      brand: "Lenovo",
-      model: "ThinkPad",
-      serialNumber: "LN789123456",
-      status: "active",
-      registrationDate: "2025-10-09",
-      qrExpiry: "2025-11-09"
+  // Fetch devices from API
+  const fetchDevices = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const status = activeTab === 'all' ? 'all' : activeTab;
+      const response = await adminService.getDevices({
+        status: status,
+        search: searchQuery || undefined,
+        per_page: 100 // Get more devices to show all
+      });
+      
+      // Transform API response to match frontend format
+      // Handle both paginated and non-paginated responses
+      const devicesData = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data.data || []);
+      
+      const transformedDevices = devicesData.map(device => ({
+        id: device.id,
+        studentName: device.student?.name || 'N/A',
+        studentId: device.student?.id || device.student?.pkStudentID || 'N/A',
+        studentEmail: device.student?.email || 'N/A',
+        studentPhone: device.student?.phone || 'N/A',
+        department: device.student?.department || 'N/A',
+        course: device.student?.course || 'N/A',
+        yearOfStudy: device.student?.year_of_study || null,
+        type: device.device_type,
+        brand: device.brand,
+        model: device.model,
+        serialNumber: device.serial_number || 'N/A',
+        status: device.status,
+        registrationDate: device.created_at ? new Date(device.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        qrExpiry: device.qr_expires_at ? new Date(device.qr_expires_at).toISOString().split('T')[0] : null,
+        notes: device.notes || '',
+        approved_at: device.approved_at,
+        rejected_at: device.rejected_at,
+        rejection_reason: device.rejection_reason
+      }));
+      
+      setDevices(transformedDevices);
+    } catch (err) {
+      console.error('Error fetching devices:', err);
+      setError('Failed to load devices. Please try again.');
+      if (err.response?.status === 401) {
+        // Unauthorized - redirect to login
+        authService.logout();
+        navigate('/');
+      }
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  const recentScans = [
-    { studentName: "Pedro Garcia", gate: "Main Gate", time: "10:30 AM", status: "success" },
-    { studentName: "Ana Rodriguez", gate: "Engineering Gate", time: "09:15 AM", status: "success" },
-    { studentName: "Juan Dela Cruz", gate: "Main Gate", time: "08:45 AM", status: "success" },
-    { studentName: "Maria Santos", gate: "Main Gate", time: "08:30 AM", status: "success" }
-  ];
+  // Fetch dashboard stats
+  const fetchStats = async () => {
+    try {
+      const response = await adminService.getDashboardStats();
+      setStats({
+        total: response.data.total_devices || 0,
+        pending: response.data.pending_devices || 0,
+        active: response.data.active_devices || 0,
+        scansToday: response.data.scans_today || 0
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  // Fetch recent scans
+  const fetchRecentScans = async () => {
+    try {
+      const response = await adminService.getRecentScans(20);
+      const transformedScans = response.data.map(scan => ({
+        studentName: scan.student_name || 'N/A',
+        gate: scan.gate_name || 'N/A',
+        time: new Date(scan.scan_time || scan.created_at).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        }),
+        status: scan.status || 'success'
+      }));
+      setRecentScans(transformedScans);
+    } catch (err) {
+      console.error('Error fetching recent scans:', err);
+      // If table doesn't exist, set empty array
+      setRecentScans([]);
+    }
+  };
+
+  // Load data on component mount and when tab changes
+  useEffect(() => {
+    fetchStats();
+    if (activeTab === 'scans') {
+      fetchRecentScans();
+    } else {
+      fetchDevices();
+    }
+  }, [activeTab]);
 
   const bgClass = darkMode 
     ? 'bg-black text-white' 
@@ -229,33 +296,64 @@ export default function AdminDashboard() {
     ? 'bg-white/10 border-white/20'
     : 'bg-white/60 border-white/40';
 
-  const handleApprove = (deviceId) => {
-    setDevices(devices.map(d => 
-      d.id === deviceId ? { ...d, status: 'active', qrExpiry: '2025-11-14' } : d
-    ));
+  const handleApprove = async (deviceId) => {
+    try {
+      setLoading(true);
+      await adminService.approveDevice(deviceId);
+      // Refresh devices list
+      await fetchDevices();
+      await fetchStats();
+      setSelectedDevice(null);
+    } catch (err) {
+      console.error('Error approving device:', err);
+      setError('Failed to approve device. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReject = (deviceId) => {
-    setDevices(devices.filter(d => d.id !== deviceId));
+  const handleReject = async (deviceId, reason = '') => {
+    try {
+      setLoading(true);
+      await adminService.rejectDevice(deviceId, reason);
+      // Refresh devices list
+      await fetchDevices();
+      await fetchStats();
+      setSelectedDevice(null);
+    } catch (err) {
+      console.error('Error rejecting device:', err);
+      setError('Failed to reject device. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredDevices = devices.filter(device => {
-    const matchesTab = activeTab === 'all' || device.status === activeTab;
-    const matchesSearch = 
-      device.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.studentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      // personnel.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.model.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const stats = {
-    total: devices.length,
-    pending: devices.filter(d => d.status === 'pending').length,
-    active: devices.filter(d => d.status === 'active').length,
-    scansToday: 24
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('user_type');
+      localStorage.removeItem('role');
+      navigate('/');
+    }
   };
+
+  // Handle search with debounce - only for device tabs
+  useEffect(() => {
+    if (activeTab === 'scans') {
+      return; // Don't search in scans tab
+    }
+    
+    const timer = setTimeout(() => {
+      fetchDevices();
+    }, 500); // Debounce search by 500ms
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeTab]);
 
   return (
     <div className={`min-h-screen ${bgClass} transition-colors duration-500`}>
@@ -298,7 +396,11 @@ export default function AdminDashboard() {
               <button className={`hidden sm:block p-2 rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
                 <Settings className={`w-5 h-5 ${textSecondary}`} />
               </button>
-              <button className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}>
+              <button 
+                onClick={handleLogout}
+                className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}
+                title="Logout"
+              >
                 <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
@@ -320,7 +422,10 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg} text-left w-full cursor-pointer`}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
                 <Laptop className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
@@ -328,9 +433,12 @@ export default function AdminDashboard() {
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{stats.total}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Total Devices</p>
-          </div>
+          </button>
 
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg} text-left w-full cursor-pointer`}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-yellow-500/20' : 'bg-yellow-100'}`}>
                 <Clock className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
@@ -338,9 +446,12 @@ export default function AdminDashboard() {
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{stats.pending}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Pending Approval</p>
-          </div>
+          </button>
 
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg} text-left w-full cursor-pointer`}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
                 <CheckCircle className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
@@ -348,9 +459,12 @@ export default function AdminDashboard() {
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{stats.active}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Active Devices</p>
-          </div>
+          </button>
 
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          <button
+            onClick={() => setActiveTab('scans')}
+            className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg} text-left w-full cursor-pointer`}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
                 <Activity className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
@@ -358,7 +472,7 @@ export default function AdminDashboard() {
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{stats.scansToday}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Scans Today</p>
-          </div>
+          </button>
         </div>
 
         {/* Search and Filter */}
@@ -367,15 +481,32 @@ export default function AdminDashboard() {
             <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 ${textMuted}`} />
             <input
               type="text"
-              placeholder="Search by name, ID, device..."
+              placeholder="Search by student name, ID, email, device brand/model, department, course..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border ${inputBg} ${textPrimary} placeholder-gray-500 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              className={`w-full pl-10 sm:pl-12 ${searchQuery ? 'pr-10 sm:pr-12' : 'pr-4'} py-2.5 sm:py-3 rounded-lg sm:rounded-xl border ${inputBg} ${textPrimary} placeholder-gray-500 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-lg transition-all ${darkMode ? 'hover:bg-white/10 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`}
+                title="Clear search"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            )}
           </div>
-          <button className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white/60 hover:bg-white/80 text-gray-900'}`}>
-            <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">Filter</span>
+          <button 
+            onClick={() => {
+              fetchDevices();
+              fetchStats();
+            }}
+            disabled={loading}
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white/60 hover:bg-white/80 text-gray-900'} disabled:opacity-50`}
+            title="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
 
@@ -434,9 +565,29 @@ export default function AdminDashboard() {
         {/* Content */}
         {activeTab === 'scans' ? (
           <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6`}>
-            <h3 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-4 sm:mb-6`}>Recent Scan Activity</h3>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className={`text-lg sm:text-xl font-bold ${textPrimary}`}>Recent Scan Activity</h3>
+              <button
+                onClick={fetchRecentScans}
+                className={`p-2 rounded-lg transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
+                title="Refresh"
+              >
+                <RefreshCw className={`w-4 h-4 ${textSecondary}`} />
+              </button>
+            </div>
             <div className="space-y-3 sm:space-y-4">
-              {recentScans.map((scan, index) => (
+              {loading && activeTab === 'scans' ? (
+                <div className="text-center py-8">
+                  <RefreshCw className={`w-8 h-8 mx-auto mb-2 ${textMuted} animate-spin`} />
+                  <p className={textSecondary}>Loading scans...</p>
+                </div>
+              ) : recentScans.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className={`w-12 h-12 mx-auto mb-2 ${textMuted}`} />
+                  <p className={textSecondary}>No recent scans found</p>
+                </div>
+              ) : (
+                recentScans.map((scan, index) => (
                 <div key={index} className={`flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/5' : 'hover:bg-white/60'}`}>
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-emerald-500/20' : 'bg-emerald-100'} flex-shrink-0`}>
@@ -449,19 +600,40 @@ export default function AdminDashboard() {
                   </div>
                   <ChevronRight className={`w-4 h-4 sm:w-5 sm:h-5 ${textMuted} flex-shrink-0`} />
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
-            {filteredDevices.length === 0 ? (
+            {loading && (
+              <div className={`${cardBg} rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center`}>
+                <RefreshCw className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 ${textMuted} animate-spin`} />
+                <h3 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-2`}>Loading devices...</h3>
+              </div>
+            )}
+            {!loading && error && (
+              <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 border-l-4 border-red-500`}>
+                <div className="flex items-center gap-3">
+                  <AlertCircle className={`w-5 h-5 text-red-500`} />
+                  <p className={`${textPrimary}`}>{error}</p>
+                  <button
+                    onClick={fetchDevices}
+                    className={`ml-auto px-4 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            )}
+            {!loading && !error && devices.length === 0 ? (
               <div className={`${cardBg} rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center`}>
                 <AlertCircle className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 ${textMuted}`} />
                 <h3 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-2`}>No devices found</h3>
                 <p className={textSecondary}>Try adjusting your search or filters</p>
               </div>
             ) : (
-              filteredDevices.map((device) => (
+              !loading && !error && devices.map((device) => (
                 <div key={device.id} className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
@@ -476,6 +648,8 @@ export default function AdminDashboard() {
                           <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${
                             device.status === 'pending'
                               ? darkMode ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-700'
+                              : device.status === 'rejected'
+                              ? darkMode ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700'
                               : darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
                           }`}>
                             {device.status.charAt(0).toUpperCase() + device.status.slice(1)}
