@@ -24,37 +24,51 @@ class AuthController extends Controller
             'id' => 'required|string|min:6|max:8',
             'name' => 'required|string|max:100',
             'email' => 'required|email|unique:students,email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:6',
+            'password_confirmation' => 'nullable|string|same:password',
             'phone' => 'nullable|string|max:15',
             'department' => 'nullable|string|max:50',
             'course' => 'nullable|string|max:100',
             'year_of_study' => 'nullable|integer',
         ]);
 
+        // Remove password_confirmation from data as it's not stored
+        unset($validated['password_confirmation']);
+
         $result = $this->authService->register($validated);
 
         return response()->json([
             'message' => 'Registration successful',
-            'student' => $result['student'],
+            'user' => $result['user'],
+            'role' => $result['role'],
             'token' => $result['token']
         ], 201);
     }
 
     /**
-     * Login student
+     * Login - supports Students, Admin, and Security Personnel
      */
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'id' => 'required|string',
+            'id' => 'nullable|string', // For students
+            'email' => 'nullable|email', // For admin/security or students
             'password' => 'required|string',
         ]);
+
+        // Ensure either id or email is provided
+        if (empty($credentials['id']) && empty($credentials['email'])) {
+            return response()->json([
+                'message' => 'Either id or email is required'
+            ], 422);
+        }
 
         $result = $this->authService->login($credentials);
 
         return response()->json([
             'message' => 'Login successful',
-            'student' => $result['student'],
+            'user' => $result['user'],
+            'role' => $result['role'],
             'token' => $result['token']
         ]);
     }
@@ -70,12 +84,46 @@ class AuthController extends Controller
     }
 
     /**
-     * Get authenticated student profile
+     * Get authenticated user profile (works for both Users and Students)
      */
     public function profile(Request $request)
     {
-        $student = $this->authService->getProfile($request->user());
+        // Get the authenticated user first
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+        
+        // Get the token to verify we're loading the correct model
+        $token = $user->currentAccessToken();
+        
+        if (!$token) {
+            return response()->json([
+                'message' => 'Invalid token'
+            ], 401);
+        }
+        
+        // Ensure we're loading the correct model based on token's tokenable_type
+        // This fixes cases where Sanctum might resolve to the wrong model
+        if ($token->tokenable_type === 'App\\Models\\Student' && !($user instanceof \App\Models\Student)) {
+            // Token is for Student but user is User model - reload the student
+            $user = \App\Models\Student::find($token->tokenable_id);
+        } elseif ($token->tokenable_type === 'App\\Models\\User' && !($user instanceof \App\Models\User)) {
+            // Token is for User but user is Student model - reload the user
+            $user = \App\Models\User::find($token->tokenable_id);
+        }
+        
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found'
+            ], 404);
+        }
 
-        return response()->json($student);
+        $profile = $this->authService->getProfile($user);
+
+        return response()->json($profile);
     }
 }
