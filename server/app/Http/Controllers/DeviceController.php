@@ -258,4 +258,12 @@ class DeviceController extends Controller
 
         return response()->json($activities);
     }
+
+    /**
+     * Get scan activity for authenticated student (alias for activities)
+     */
+    public function getScanActivity(Request $request)
+    {
+        return $this->activities($request);
+    }
 }

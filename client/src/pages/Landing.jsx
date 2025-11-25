@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Lock, User, Zap, Shield, Rocket, Moon, Sun, Mail, GraduationCap, Calendar } from 'lucide-react';
 import authService from '../services/authService';
 import { useNavigate } from 'react-router-dom';
@@ -23,7 +23,18 @@ export default function Landing() {
   
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Load remembered credentials on component mount
+  useEffect(() => {
+    const rememberedId = localStorage.getItem('remembered_id');
+    if (rememberedId) {
+      setFormData(prev => ({ ...prev, id: rememberedId }));
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -36,6 +47,7 @@ export default function Landing() {
     e.preventDefault();
     setMessage('');
     setError('');
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -46,16 +58,24 @@ export default function Landing() {
         };
         
         // Check if input looks like an email (contains @)
-        const isEmailFormat = formData.email && formData.email.includes('@');
+        const isEmailFormat = formData.id && formData.id.includes('@');
         
         if (isEmailFormat) {
-          credentials.email = formData.email;
+          credentials.email = formData.id;
         } else {
-          // Use email field value as ID (students can login with ID via email field)
-          credentials.id = formData.email || formData.id;
+          // Use id field for student login
+          credentials.id = formData.id;
         }
         
         const result = await authService.login(credentials);
+        
+        // Handle remember me functionality
+        if (rememberMe) {
+          localStorage.setItem('remembered_id', formData.id);
+        } else {
+          localStorage.removeItem('remembered_id');
+        }
+        
         setMessage('✅ Login successful!');
         console.log('Logged in user:', result);
         
@@ -108,12 +128,31 @@ export default function Landing() {
             password_confirmation: '',
           });
           setMessage('');
-        }, 2000);
+        }, 1500);
       }
     } catch (err) {
-      console.error('Auth error:', err);
-      const errorMsg = err.response?.data?.message || err.message || 'An error occurred. Please try again.';
-      setError(`❌ ${errorMsg}`);
+      // Handle validation errors with field-specific messages
+      if (err.response?.data?.errors) {
+        const errors = err.response.data.errors;
+        const fieldErrorMap = {};
+        
+        // Map Laravel validation errors to field names
+        Object.keys(errors).forEach(key => {
+          const fieldName = key === 'password_confirmation' ? 'password_confirmation' : key;
+          fieldErrorMap[fieldName] = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+        });
+        
+        setFieldErrors(fieldErrorMap);
+        
+        // Show general error message if available
+        if (err.response?.data?.message) {
+          setError(`❌ ${err.response.data.message}`);
+        }
+      } else {
+        const errorMessage = err.response?.data?.message || err.message || 'Operation failed';
+        setError(`❌ ${errorMessage}`);
+      }
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -122,323 +161,453 @@ export default function Landing() {
   const bgClass = darkMode 
     ? 'bg-black text-white' 
     : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 text-gray-900';
+  
+  const orbClass = darkMode
+    ? 'bg-blue-600/20'
+    : 'bg-blue-200/30';
 
-  const cardBg = darkMode
-    ? 'bg-white/5 border border-white/10 backdrop-blur-xl'
-    : 'bg-white/80 border border-white/60 backdrop-blur-xl';
+  const featureCardBg = darkMode
+    ? 'p-3 bg-blue-500/20 rounded-xl border border-blue-500/30'
+    : 'p-3 bg-blue-100 rounded-xl border border-blue-300/60';
 
-  const textPrimary = darkMode ? 'text-white' : 'text-gray-900';
-  const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
+  const featureCardText = darkMode ? 'text-blue-400' : 'text-blue-600';
+  const featureTitleText = darkMode ? 'text-white' : 'text-gray-900';
+  const featureDescText = darkMode ? 'text-gray-400' : 'text-gray-600';
+
+  const formBg = darkMode
+    ? 'backdrop-blur-2xl bg-white/5 border border-white/10'
+    : 'backdrop-blur-xl bg-white/80 border border-white/60';
+  
+  const formText = darkMode ? 'text-gray-300' : 'text-gray-800';
+  const formDescText = darkMode ? 'text-gray-400' : 'text-gray-600';
+  
+  const inputBg = darkMode
+    ? 'bg-gray-900/50 border border-gray-800 text-white placeholder-gray-600'
+    : 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500';
+
+  const toggleBg = darkMode
+    ? 'bg-gray-900/50 border border-gray-800'
+    : 'bg-gray-100 border border-gray-300';
+
+  const checkboxColor = darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-gray-50 border-gray-300';
 
   return (
-    <div className={`min-h-screen ${bgClass} transition-colors duration-500 flex items-center justify-center p-4`}>
+    <div className={`min-h-screen ${bgClass} overflow-hidden transition-colors duration-500`}>
+      {/* Theme Toggle Button */}
+      <button
+        onClick={() => setDarkMode(!darkMode)}
+        className={`fixed top-6 right-6 z-50 p-3 rounded-full backdrop-blur-xl transition-all duration-300 ${
+          darkMode
+            ? 'bg-white/10 border border-white/20 hover:bg-white/20'
+            : 'bg-gray-900/10 border border-gray-900/20 hover:bg-gray-900/20'
+        }`}
+      >
+        {darkMode ? (
+          <Sun className="w-6 h-6 text-yellow-400" />
+        ) : (
+          <Moon className="w-6 h-6 text-indigo-600" />
+        )}
+      </button>
+
       {/* Animated background elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute top-20 right-10 w-80 h-80 ${darkMode ? 'bg-blue-600/20' : 'bg-blue-200/30'} rounded-full blur-3xl animate-pulse`}></div>
-        <div className={`absolute bottom-40 left-20 w-96 h-96 ${darkMode ? 'bg-indigo-600/20' : 'bg-indigo-200/20'} rounded-full blur-3xl animate-pulse`} style={{animationDelay: '2s'}}></div>
+        <div className={`absolute top-20 left-10 w-80 h-80 ${orbClass} rounded-full blur-3xl animate-pulse`}></div>
+        <div className={`absolute bottom-40 right-20 w-96 h-96 ${darkMode ? 'bg-indigo-600/20' : 'bg-indigo-200/20'} rounded-full blur-3xl animate-pulse`} style={{animationDelay: '2s'}}></div>
+        <div className={`absolute top-1/2 left-1/3 w-72 h-72 ${darkMode ? 'bg-cyan-600/10' : 'bg-cyan-200/20'} rounded-full blur-3xl animate-pulse`} style={{animationDelay: '4s'}}></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-4xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-600 bg-clip-text text-transparent">
-              DevPass
-            </h1>
-          </div>
-          <p className={`text-sm ${textSecondary}`}>
-            {isLogin ? 'Welcome back!' : 'Create your account'}
-          </p>
-        </div>
-
-        {/* Form Card */}
-        <div className={`${cardBg} rounded-2xl p-8 shadow-2xl`}>
-          {/* Toggle Login/Register */}
-          <div className="flex gap-4 mb-6">
-            <button
-              onClick={() => {
-                setIsLogin(true);
-                setError('');
-                setMessage('');
-              }}
-              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
-                isLogin
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
-                  : `${textSecondary} hover:${textPrimary}`
-              }`}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => {
-                setIsLogin(false);
-                setError('');
-                setMessage('');
-              }}
-              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
-                !isLogin
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
-                  : `${textSecondary} hover:${textPrimary}`
-              }`}
-            >
-              Register
-            </button>
-          </div>
-
-          {/* Messages */}
-          {message && (
-            <div className={`mb-4 p-3 rounded-lg bg-green-500/20 border border-green-500/40 ${textPrimary} text-sm`}>
-              {message}
-            </div>
-          )}
-          {error && (
-            <div className={`mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/40 ${textPrimary} text-sm`}>
-              {error}
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isLogin ? (
-              <>
-                {/* Login Form */}
-                <div>
-                  <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                    Email or Student ID
-                  </label>
-                  <div className="relative">
-                    <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${textSecondary}`} />
-                    <input
-                      type="text"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Enter email or student ID"
-                    />
-                  </div>
+      {/* Content */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
+        <div className="w-full max-w-7xl grid lg:grid-cols-2 gap-8 lg:gap-0 items-center">
+          {/* Left Side - Information */}
+          <div className="lg:pr-12">
+            <div className="mb-12">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                  <Zap className="w-6 h-6 text-white" />
                 </div>
+                <h1 className="text-5xl lg:text-6xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-600 bg-clip-text text-transparent">
+                  DevPass
+                </h1>
+              </div>
+              <p className={`text-xl lg:text-2xl ${darkMode ? 'text-gray-300' : 'text-gray-700'} font-light leading-relaxed`}>
+                Next-gen QR-based device registration platform for seamless campus entry
+              </p>
+            </div>
 
-                <div>
-                  <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${textSecondary}`} />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      className={`w-full pl-10 pr-12 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Enter password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${textSecondary} hover:${textPrimary}`}
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
+            <div className="space-y-5 mb-12">
+              <div className="flex items-start gap-4 group">
+                <div className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}>
+                  <Zap className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
                 </div>
-              </>
-            ) : (
-              <>
-                {/* Register Form */}
-                <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className={`font-semibold text-lg ${featureTitleText} mb-1`}>Digital Gate Pass</h3>
+                  <p className={featureDescText}>Automated QR verification replaces manual processes instantly</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 group">
+                <div className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}>
+                  <Shield className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                </div>
+                <div>
+                  <h3 className={`font-semibold text-lg ${featureTitleText} mb-1`}>Enhanced Security</h3>
+                  <p className={featureDescText}>Real-time validation powered by centralized database</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 group">
+                <div className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}>
+                  <Rocket className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                </div>
+                <div>
+                  <h3 className={`font-semibold text-lg ${featureTitleText} mb-1`}>Quick & Efficient</h3>
+                  <p className={featureDescText}>Streamline operations and eliminate entry bottlenecks</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Form */}
+          <div className="lg:pl-12">
+            <div className={`${formBg} rounded-3xl p-8 lg:p-10 shadow-2xl hover:shadow-3xl transition-all duration-500`}>
+              <div className="text-center mb-8">
+                <h2 className={`text-3xl lg:text-4xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {isLogin ? 'Welcome Back' : 'Join DevPass'}
+                </h2>
+                <p className={formDescText}>
+                  {isLogin ? 'Sign in to access your digital pass' : 'Create your account in seconds'}
+                </p>
+              </div>
+
+              {/* Toggle Buttons */}
+              <div className={`flex gap-2 ${toggleBg} rounded-xl p-1 mb-8`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(true);
+                    setFormData({
+                      id: '',
+                      name: '',
+                      email: '',
+                      course: '',
+                      phone: '',
+                      department: '',
+                      year_of_study: '',
+                      password: '',
+                      password_confirmation: '',
+                    });
+                    setMessage('');
+                    setError('');
+                    setFieldErrors({});
+                  }}
+                  className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 cursor-pointer ${
+                    isLogin 
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
+                      : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(false);
+                    setFormData({
+                      id: '',
+                      name: '',
+                      email: '',
+                      course: '',
+                      phone: '',
+                      department: '',
+                      year_of_study: '',
+                      password: '',
+                      password_confirmation: '',
+                    });
+                    setMessage('');
+                    setError('');
+                    setFieldErrors({});
+                  }}
+                  className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
+                    !isLogin 
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
+                      : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Register
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-5">
+                  {!isLogin && (
+                    <>
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                          Full Name
+                        </label>
+                        <div className="relative">
+                          <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="name"
+                            type="text"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.name ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="John Doe"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                        {fieldErrors.name && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.name}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                          Course
+                        </label>
+                        <div className="relative">
+                          <GraduationCap className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="course"
+                            type="text"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.course ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="Computer Science"
+                            value={formData.course}
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                        {fieldErrors.course && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.course}</p>
+                        )}
+                      </div>
+
+                      {/* Phone */}
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>Phone</label>
+                        <div className="relative">
+                          <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="phone"
+                            type="text"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.phone ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="09123456789"
+                            value={formData.phone}
+                            onChange={handleChange}
+                          />
+                        </div>
+                        {fieldErrors.phone && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.phone}</p>
+                        )}
+                      </div>
+
+                      {/* Department */}
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>Department</label>
+                        <div className="relative">
+                          <GraduationCap className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="department"
+                            type="text"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.department ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="Engineering"
+                            value={formData.department}
+                            onChange={handleChange}
+                          />
+                        </div>
+                        {fieldErrors.department && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.department}</p>
+                        )}
+                      </div>
+
+                      {/* Year of Study */}
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>Year of Study</label>
+                        <div className="relative">
+                          <Calendar className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="year_of_study"
+                            type="number"
+                            min="1"
+                            max="10"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.year_of_study ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="3"
+                            value={formData.year_of_study}
+                            onChange={handleChange}
+                          />
+                        </div>
+                        {fieldErrors.year_of_study && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.year_of_study}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                          Email Address
+                        </label>
+                        <div className="relative">
+                          <Mail className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                          <input
+                            name="email"
+                            type="email"
+                            className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.email ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                            placeholder="student@example.com"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                        {fieldErrors.email && (
+                          <p className="mt-1 text-sm text-red-500">{fieldErrors.email}</p>
+                        )}
+                      </div>
+                    </>                 
+                  )}
+
                   <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                      Student ID *
+                    <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                      Student ID
                     </label>
                     <div className="relative">
-                      <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${textSecondary}`} />
+                      <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
                       <input
-                        type="text"
                         name="id"
+                        type="text"
+                        className={`w-full pl-12 pr-4 py-3 ${inputBg} ${fieldErrors.id ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        placeholder={isLogin ? "Enter email or student ID" : "e.g., 23664035"}
                         value={formData.id}
                         onChange={handleChange}
                         required
-                        className={`w-full pl-10 pr-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        placeholder="ID"
                       />
                     </div>
+                    {fieldErrors.id && (
+                      <p className="mt-1 text-sm text-red-500">{fieldErrors.id}</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                      Name *
+                    <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                      Password
                     </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className={`w-full px-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Name"
-                    />
+                    <div className="relative">
+                      <Lock className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                      <input
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        className={`w-full pl-12 pr-12 py-3 ${inputBg} ${fieldErrors.password ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className={`absolute right-4 top-3.5 transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    {fieldErrors.password && (
+                      <p className="mt-1 text-sm text-red-500">{fieldErrors.password}</p>
+                    )}
                   </div>
+
+                  {!isLogin && (
+                    <div>
+                      <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <Lock className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                        <input
+                          name="password_confirmation"
+                          type={showPassword ? 'text' : 'password'}
+                          className={`w-full pl-12 pr-12 py-3 ${inputBg} ${fieldErrors.password_confirmation ? 'border-red-500' : ''} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                          placeholder="••••••••"
+                          value={formData.password_confirmation}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                      {fieldErrors.password_confirmation && (
+                        <p className="mt-1 text-sm text-red-500">{fieldErrors.password_confirmation}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {isLogin && (
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center cursor-pointer gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600 cursor-pointer`} 
+                        />
+                        <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Remember me</span>
+                      </label>
+                      <a href="#" className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
+                        Forgot password?
+                      </a>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (isLogin ? 'Signing in...' : 'Creating account...') : (isLogin ? 'Sign In' : 'Create Account')}
+                  </button>
                 </div>
+              </form>
 
-                <div>
-                  <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                    Email *
-                  </label>
-                  <div className="relative">
-                    <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${textSecondary}`} />
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="email@example.com"
-                    />
-                  </div>
+              {/* Success/Error Messages */}
+              {message && (
+                <div className={`mt-4 p-4 rounded-xl ${darkMode ? 'bg-green-500/20 border border-green-500/40 text-green-400' : 'bg-green-50 border-l-4 border-green-500 text-green-700'}`}>
+                  {message}
                 </div>
+              )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Phone"
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                      Year of Study
-                    </label>
-                    <input
-                      type="number"
-                      name="year_of_study"
-                      value={formData.year_of_study}
-                      onChange={handleChange}
-                      min="1"
-                      max="10"
-                      className={`w-full px-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Year"
-                    />
-                  </div>
+              {error && (
+                <div className={`mt-4 p-4 rounded-xl ${darkMode ? 'bg-red-500/20 border border-red-500/40 text-red-400' : 'bg-red-50 border-l-4 border-red-500 text-red-700'}`}>
+                  {error}
                 </div>
+              )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                      Department
-                    </label>
-                    <input
-                      type="text"
-                      name="department"
-                      value={formData.department}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Department"
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                      Course
-                    </label>
-                    <input
-                      type="text"
-                      name="course"
-                      value={formData.course}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Course"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                    Password *
-                  </label>
-                  <div className="relative">
-                    <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${textSecondary}`} />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      minLength="6"
-                      className={`w-full pl-10 pr-12 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Password (min 6 chars)"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${textSecondary} hover:${textPrimary}`}
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-                    Confirm Password *
-                  </label>
-                  <div className="relative">
-                    <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${textSecondary}`} />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password_confirmation"
-                      value={formData.password_confirmation}
-                      onChange={handleChange}
-                      required
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg ${darkMode ? 'bg-white/5 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Confirm password"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full py-3 rounded-lg font-bold text-lg transition-all shadow-lg ${
-                loading
-                  ? 'bg-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl'
-              }`}
-            >
-              {loading ? 'Processing...' : isLogin ? 'Login' : 'Register'}
-            </button>
-          </form>
-        </div>
-
-        {/* Dark Mode Toggle */}
-        <div className="flex justify-center mt-6">
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className={`p-3 rounded-full transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-200 hover:bg-gray-300'}`}
-          >
-            {darkMode ? (
-              <Sun className="w-5 h-5 text-yellow-400" />
-            ) : (
-              <Moon className="w-5 h-5 text-indigo-600" />
-            )}
-          </button>
+              <div className="mt-8 text-center">
+                <p className={formDescText}>
+                  {isLogin ? "Don't have an account? " : "Already have an account? "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setFormData({
+                        id: '',
+                        name: '',
+                        email: '',
+                        course: '',
+                        phone: '',
+                        department: '',
+                        year_of_study: '',
+                        password: '',
+                        password_confirmation: '',
+                      });
+                      setMessage('');
+                      setError('');
+                      setFieldErrors({});
+                    }}
+                    className={`font-semibold cursor-pointer transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                  >
+                    {isLogin ? 'Sign up' : 'Sign in'}
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

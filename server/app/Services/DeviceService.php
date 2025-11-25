@@ -475,8 +475,8 @@ class DeviceService
                 $query->where('id', $filters['device_id']);
             }
 
-            // Filter by status
-            if (isset($filters['status'])) {
+            // Filter by status (skip if 'all')
+            if (isset($filters['status']) && $filters['status'] !== 'all') {
                 $query->where('status', $filters['status']);
             }
 

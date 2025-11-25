@@ -45,5 +45,18 @@ export const adminService = {
         const response = await api.get(`/admin/devices/activities/list?limit=${limit}`);
         return response.data;
     },
+
+    // Alias methods for compatibility
+    getDevices: async (filters = {}) => {
+        return adminService.getAllDevices(filters);
+    },
+
+    getDashboardStats: async () => {
+        return adminService.getStatistics();
+    },
+
+    getRecentScans: async (limit = 20) => {
+        return adminService.getActivities(limit);
+    },
 };
 

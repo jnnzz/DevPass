@@ -224,14 +224,20 @@ export default function SecurityPersonnel() {
   const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
   const textMuted = darkMode ? 'text-gray-500' : 'text-gray-500';
 
-  // Check authentication
+  // Check authentication on mount only
   useEffect(() => {
-    if (!authService.isAuthenticated() || !authService.isSecurity()) {
-      navigate('/');
-    } else {
+    const checkAuth = () => {
+      if (!authService.isAuthenticated() || !authService.isSecurity()) {
+        navigate('/');
+        return false;
+      }
+      return true;
+    };
+    
+    if (checkAuth()) {
       loadData();
     }
-  }, [navigate]);
+  }, []); // Only run on mount, not on every render
 
   // Load data when gate changes
   useEffect(() => {
@@ -276,9 +282,15 @@ export default function SecurityPersonnel() {
       setScanHistory(formattedActivities);
     } catch (error) {
       console.error('Failed to load data:', error);
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        await authService.logout();
-        navigate('/');
+      // Only redirect if it's a real authentication error (401) and no token exists
+      if (error.response?.status === 401) {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        if (!token) {
+          // No token means we're already logged out
+          setTimeout(() => {
+            navigate('/');
+          }, 2000);
+        }
       }
     } finally {
       setLoading(false);
@@ -481,8 +493,55 @@ export default function SecurityPersonnel() {
     
     try {
       // Clean the QR data (remove whitespace)
-      const hash = qrData.trim();
-      console.log('Scanned QR hash:', hash.substring(0, 20) + '...');
+      let hash = qrData.trim();
+      
+      // Try to parse as JSON first
+      try {
+        const jsonData = JSON.parse(hash);
+        // If it's JSON, extract the hash
+        if (jsonData.hash) {
+          hash = jsonData.hash;
+          console.log('Extracted hash from JSON:', hash.substring(0, 20) + '...');
+        } else if (jsonData.deviceId) {
+          // Old format - try to use deviceId to get hash (not ideal, but handle it)
+          setScanResult({
+            valid: false,
+            message: 'QR code format outdated. Please regenerate QR code.',
+            student_data: null
+          });
+          return;
+        }
+      } catch (e) {
+        // Not JSON, continue with hash extraction
+      }
+      
+      // Handle URLs - extract hash from URL if it's a URL
+      if (hash.startsWith('http://') || hash.startsWith('https://')) {
+        // Try to extract hash from URL path
+        const urlMatch = hash.match(/\/devices\/(\d+)\/scan/);
+        if (urlMatch) {
+          setScanResult({
+            valid: false,
+            message: 'Invalid QR code format. QR code should contain the device hash, not a URL. Please regenerate the QR code.',
+            student_data: null
+          });
+          return;
+        }
+        // If it's a different URL format, try to extract hash from query params or path
+        const hashMatch = hash.match(/[a-zA-Z0-9]{32,}/); // Look for hash-like string (32+ chars)
+        if (hashMatch) {
+          hash = hashMatch[0];
+        } else {
+          setScanResult({
+            valid: false,
+            message: 'Invalid QR code format. QR code should contain the device hash, not a URL.',
+            student_data: null
+          });
+          return;
+        }
+      }
+      
+      console.log('Final QR hash:', hash.substring(0, 20) + '...');
       
       // First, try to read QR code to get student info (doesn't log activity)
       const readResult = await securityService.readQR(hash);
@@ -497,7 +556,7 @@ export default function SecurityPersonnel() {
         // QR not found in system - show error
         setScanResult({
           valid: false,
-          message: 'QR code is not from the DevPass system. This QR code is not registered in our database.',
+          message: readResult.message || 'QR code is not from the DevPass system. This QR code is not registered in our database.',
           student_data: null
         });
       }

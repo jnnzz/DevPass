@@ -188,8 +188,48 @@ export default function QRScanner() {
     
     try {
       // Clean the QR data (remove whitespace, newlines, etc.)
-      const hash = qrData.trim();
-      console.log('Scanned QR hash:', hash.substring(0, 20) + '...');
+      let hash = qrData.trim();
+      
+      // Try to parse as JSON first
+      try {
+        const jsonData = JSON.parse(hash);
+        // If it's JSON, extract the hash
+        if (jsonData.hash) {
+          hash = jsonData.hash;
+          console.log('Extracted hash from JSON:', hash.substring(0, 20) + '...');
+        } else if (jsonData.deviceId) {
+          // Old format - try to use deviceId to get hash (not ideal, but handle it)
+          setScanResult({
+            valid: false,
+            message: 'QR code format outdated. Please regenerate QR code.',
+          });
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        // Not JSON, continue with hash extraction
+      }
+      
+      // Handle URLs - extract hash from URL if it's a URL
+      if (hash.startsWith('http://') || hash.startsWith('https://')) {
+        // Try to extract hash from URL path
+        const urlMatch = hash.match(/\/devices\/(\d+)\/scan/);
+        if (urlMatch) {
+          setScanResult({
+            valid: false,
+            message: 'Invalid QR code format. QR code should contain the device hash, not a URL.',
+          });
+          setLoading(false);
+          return;
+        }
+        // If it's a different URL format, try to extract hash from query params or path
+        const hashMatch = hash.match(/[a-zA-Z0-9]{32,}/); // Look for hash-like string (32+ chars)
+        if (hashMatch) {
+          hash = hashMatch[0];
+        }
+      }
+      
+      console.log('Final QR hash:', hash.substring(0, 20) + '...');
       
       // Send hash to backend to fetch student data
       const response = await api.post('/qr/read', {
