@@ -1,12 +1,15 @@
 import api from '../api/axios';
 
+// Use sessionStorage instead of localStorage so each tab maintains its own session
+const storage = sessionStorage;
+
 const authService = {
     register: async (userData) => {
         const response = await api.post('/auth/register', userData);
         if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            localStorage.setItem('role', response.data.role || 'student');
+            storage.setItem('token', response.data.token);
+            storage.setItem('user', JSON.stringify(response.data.user));
+            storage.setItem('role', response.data.role || 'student');
         }
         return response.data;
     },
@@ -14,33 +17,39 @@ const authService = {
     login: async (credentials) => {
         const response = await api.post('/auth/login', credentials);
         if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            localStorage.setItem('role', response.data.role || 'student');
+            storage.setItem('token', response.data.token);
+            storage.setItem('user', JSON.stringify(response.data.user));
+            storage.setItem('role', response.data.role || 'student');
         }
         return response.data;
     },
 
     logout: async () => {
-        const token = localStorage.getItem('token');
+        const token = storage.getItem('token');
         if (token) {
             try {
                 await api.post('/auth/logout', {}, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             } catch (error) {
-                // Even if logout fails on server, clear local storage
+                // Even if logout fails on server, clear session storage
                 console.error('Logout error:', error);
             }
         }
+        storage.removeItem('token');
+        storage.removeItem('user');
+        storage.removeItem('role');
+        storage.removeItem('student'); // Remove old key if exists
+        // Also clear localStorage for backwards compatibility
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('role');
-        localStorage.removeItem('student'); // Remove old key if exists
+        localStorage.removeItem('student');
     },
 
     getCurrentUser: () => {
-        const user = localStorage.getItem('user') || localStorage.getItem('student');
+        // Check sessionStorage first, then localStorage for backwards compatibility
+        const user = storage.getItem('user') || localStorage.getItem('user') || storage.getItem('student') || localStorage.getItem('student');
         return user ? JSON.parse(user) : null;
     },
 
@@ -50,15 +59,15 @@ const authService = {
     },
 
     getRole: () => {
-        return localStorage.getItem('role') || 'student';
+        return storage.getItem('role') || localStorage.getItem('role') || 'student';
     },
 
     getToken: () => {
-        return localStorage.getItem('token');
+        return storage.getItem('token') || localStorage.getItem('token');
     },
 
     isAuthenticated: () => {
-        return !!localStorage.getItem('token');
+        return !!(storage.getItem('token') || localStorage.getItem('token'));
     },
 
     isAdmin: () => {
@@ -78,13 +87,27 @@ const authService = {
         try {
             const response = await api.get('/auth/profile');
             const user = response.data;
-            // Update localStorage with fresh data
-            localStorage.setItem('user', JSON.stringify(user));
+            // Update sessionStorage with fresh data
+            storage.setItem('user', JSON.stringify(user));
+            // Also update role if provided
+            if (user.role) {
+                storage.setItem('role', user.role);
+            }
             return user;
         } catch (error) {
             console.error('Failed to get profile:', error);
-            // If API call fails, fall back to localStorage
-            return authService.getCurrentUser();
+            // If API call fails with 401, clear stale data
+            if (error.response?.status === 401) {
+                storage.removeItem('user');
+                storage.removeItem('role');
+                // Also clear localStorage for backwards compatibility
+                localStorage.removeItem('user');
+                localStorage.removeItem('role');
+                throw error; // Re-throw to let component handle it
+            }
+            // For other errors, don't use stale storage data
+            // Return null so component can handle the error
+            throw error;
         }
     }
 };

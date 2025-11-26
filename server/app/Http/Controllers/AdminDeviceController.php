@@ -21,6 +21,19 @@ class AdminDeviceController extends Controller
     {
         $user = $request->user();
         
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated. Please login first.'], 401);
+        }
+        
+        // Check if user is a User model (not Student) and has admin role
+        // Students don't have role field, only Users do
+        if (!($user instanceof \App\Models\User)) {
+            return response()->json(['message' => 'Unauthorized. Admin access required.'], 403);
+        }
+        
+        // Reload user to ensure role is loaded
+        $user = \App\Models\User::find($user->id);
+        
         if (!$user || $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized. Admin access required.'], 403);
         }

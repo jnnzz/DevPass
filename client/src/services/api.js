@@ -1,13 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8000/api';
-
-const api = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+import api from '../api/axios';
 
 export const studentAPI = {
     getAll: () => api.get('/students'),
@@ -17,8 +8,15 @@ export const studentAPI = {
 
 export const deviceAPI = {
     getAll: () => api.get('/devices'),
-    create: (deviceData) => api.post('/devices', deviceData),
+    create: (deviceData) => api.post('/devices', {
+        device_type: deviceData.deviceType,
+        brand: deviceData.brand,
+        model: deviceData.model,
+        serial_number: deviceData.serialNumber,
+        notes: deviceData.notes
+    }),
     getByStudent: (studentId) => api.get(`/devices/student/${studentId}`),
+    getScanActivity: () => api.get('/devices/activity/scans'),
 };
 
 export const qrAPI = {
