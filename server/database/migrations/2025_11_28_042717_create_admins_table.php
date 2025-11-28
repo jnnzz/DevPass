@@ -8,13 +8,17 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
-     * Note: Users table is not created as we use students table for authentication.
-     * This migration is kept for Laravel compatibility but does nothing.
      */
     public function up(): void
     {
-        // Intentionally empty - using students table instead of users table
+        if (!Schema::hasTable('admins')) {
+            Schema::create('admins', function (Blueprint $table) {
+                $table->id('admin_id');
+                $table->string('username', 50);
+                $table->string('email', 158);
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Intentionally empty
+        Schema::dropIfExists('admins');
     }
 };

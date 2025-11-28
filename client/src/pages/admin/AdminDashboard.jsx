@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../../api/axios';
+import { useNavigate } from 'react-router-dom';
 import { 
   QrCode, 
   Users, 
@@ -22,7 +24,9 @@ import {
   Download,
   BarChart3,
   TrendingUp,
-  Activity
+  Activity,
+  MapPin,
+  User
 } from 'lucide-react';
 
 function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) {
@@ -139,75 +143,73 @@ function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) 
 }
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDevice, setSelectedDevice] = useState(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [devices, setDevices] = useState([]);
+  const [recentScans, setRecentScans] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    active: 0,
+    scansToday: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [selectedScan, setSelectedScan] = useState(null);
 
-  // Mock data
-  const [devices, setDevices] = useState([
-    {
-      id: 1,
-      studentName: "Juan Dela Cruz",
-      studentId: "STU123456",
-      department: "CCS",
-      course: "BSIT",
-      type: "Laptop",
-      brand: "Dell",
-      model: "XPS 15",
-      serialNumber: "DL123456789",
-      status: "pending",
-      registrationDate: "2025-10-14"
-    },
-    {
-      id: 2,
-      studentName: "Maria Santos",
-      studentId: "STU123457",
-      department: "CCS",
-      course: "BSCS",
-      type: "Laptop",
-      brand: "MacBook",
-      model: "Pro M2",
-      serialNumber: "MB987654321",
-      status: "pending",
-      registrationDate: "2025-10-14"
-    },
-    {
-      id: 3,
-      studentName: "Pedro Garcia",
-      studentId: "STU123458",
-      department: "Engineering",
-      course: "BSCpE",
-      type: "Laptop",
-      brand: "HP",
-      model: "Pavilion",
-      serialNumber: "HP456789123",
-      status: "active",
-      registrationDate: "2025-10-10",
-      qrExpiry: "2025-11-10"
-    },
-    {
-      id: 4,
-      studentName: "Ana Rodriguez",
-      studentId: "STU123459",
-      department: "CCS",
-      course: "BSIT",
-      type: "Laptop",
-      brand: "Lenovo",
-      model: "ThinkPad",
-      serialNumber: "LN789123456",
-      status: "active",
-      registrationDate: "2025-10-09",
-      qrExpiry: "2025-11-09"
+  // Fetch devices and stats
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const status = activeTab === 'all' ? 'all' : activeTab;
+        const [devicesRes, statsRes, scansRes] = await Promise.all([
+          api.get(`/devices?status=${status}`),
+          api.get('/devices/stats'),
+          api.get('/entries?limit=10')
+        ]);
+        
+        setDevices(devicesRes.data);
+        setStats({
+          ...statsRes.data,
+          scansToday: scansRes.data.length
+        });
+        setRecentScans(scansRes.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        if (error.response?.status === 401) {
+          navigate('/');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [activeTab, navigate]);
+
+  // Refresh data after approve/reject
+  const refreshData = async () => {
+    try {
+      const status = activeTab === 'all' ? 'all' : activeTab;
+      const [devicesRes, statsRes, scansRes] = await Promise.all([
+        api.get(`/devices?status=${status}`),
+        api.get('/devices/stats'),
+        api.get('/entries?limit=10')
+      ]);
+      setDevices(devicesRes.data);
+      setStats({
+        ...statsRes.data,
+        scansToday: scansRes.data.length
+      });
+      setRecentScans(scansRes.data);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
     }
-  ]);
-
-  const recentScans = [
-    { studentName: "Pedro Garcia", gate: "Main Gate", time: "10:30 AM", status: "success" },
-    { studentName: "Ana Rodriguez", gate: "Engineering Gate", time: "09:15 AM", status: "success" },
-    { studentName: "Juan Dela Cruz", gate: "Main Gate", time: "08:45 AM", status: "success" },
-    { studentName: "Maria Santos", gate: "Main Gate", time: "08:30 AM", status: "success" }
-  ];
+  };
 
   const bgClass = darkMode 
     ? 'bg-black text-white' 
@@ -229,33 +231,54 @@ export default function AdminDashboard() {
     ? 'bg-white/10 border-white/20'
     : 'bg-white/60 border-white/40';
 
-  const handleApprove = (deviceId) => {
-    setDevices(devices.map(d => 
-      d.id === deviceId ? { ...d, status: 'active', qrExpiry: '2025-11-14' } : d
-    ));
+  const handleApprove = async (deviceId) => {
+    try {
+      const response = await api.post(`/devices/${deviceId}/approve`);
+      if (response.data.message) {
+        // Show success message (you can replace with a toast notification)
+        console.log('Device approved successfully');
+      }
+      await refreshData();
+    } catch (error) {
+      console.error('Error approving device:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to approve device';
+      alert(errorMessage);
+    }
   };
 
-  const handleReject = (deviceId) => {
-    setDevices(devices.filter(d => d.id !== deviceId));
+  const handleReject = async (deviceId) => {
+    try {
+      const response = await api.post(`/devices/${deviceId}/reject`);
+      if (response.data.message) {
+        // Show success message (you can replace with a toast notification)
+        console.log('Device rejected successfully');
+      }
+      await refreshData();
+    } catch (error) {
+      console.error('Error rejecting device:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to reject device';
+      alert(errorMessage);
+    }
   };
 
-  const filteredDevices = devices.filter(device => {
-    const matchesTab = activeTab === 'all' || device.status === activeTab;
-    const matchesSearch = 
-      device.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.studentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      // personnel.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.model.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const stats = {
-    total: devices.length,
-    pending: devices.filter(d => d.status === 'pending').length,
-    active: devices.filter(d => d.status === 'active').length,
-    scansToday: 24
-  };
+  const filteredDevices = devices
+    .filter(device => {
+      const matchesSearch = 
+        device.studentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.studentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.model?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      // When showing all devices, prioritize pending devices at the top
+      if (activeTab === 'all') {
+        if (a.status === 'pending' && b.status !== 'pending') return -1;
+        if (a.status !== 'pending' && b.status === 'pending') return 1;
+      }
+      // For other tabs, maintain original order
+      return 0;
+    });
 
   return (
     <div className={`min-h-screen ${bgClass} transition-colors duration-500`}>
@@ -298,7 +321,11 @@ export default function AdminDashboard() {
               <button className={`hidden sm:block p-2 rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
                 <Settings className={`w-5 h-5 ${textSecondary}`} />
               </button>
-              <button className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}>
+              <button 
+                onClick={() => setShowLogoutConfirm(true)}
+                className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10 text-red-400' : 'hover:bg-gray-100 text-red-600'}`}
+                title="Logout"
+              >
                 <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
@@ -320,7 +347,10 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg} cursor-pointer text-left w-full`}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
                 <Laptop className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
@@ -328,9 +358,12 @@ export default function AdminDashboard() {
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{stats.total}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Total Devices</p>
-          </div>
+          </button>
 
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg} cursor-pointer text-left w-full`}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-yellow-500/20' : 'bg-yellow-100'}`}>
                 <Clock className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
@@ -338,9 +371,12 @@ export default function AdminDashboard() {
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{stats.pending}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Pending Approval</p>
-          </div>
+          </button>
 
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg} cursor-pointer text-left w-full`}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
                 <CheckCircle className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
@@ -348,9 +384,12 @@ export default function AdminDashboard() {
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{stats.active}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Active Devices</p>
-          </div>
+          </button>
 
-          <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg}`}>
+          <button
+            onClick={() => setActiveTab('scans')}
+            className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all ${hoverCardBg} cursor-pointer text-left w-full`}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
                 <Activity className={`w-4 h-4 sm:w-6 sm:h-6 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
@@ -358,7 +397,7 @@ export default function AdminDashboard() {
             </div>
             <h3 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-1`}>{stats.scansToday}</h3>
             <p className={`text-xs sm:text-sm ${textSecondary}`}>Scans Today</p>
-          </div>
+          </button>
         </div>
 
         {/* Search and Filter */}
@@ -435,30 +474,53 @@ export default function AdminDashboard() {
         {activeTab === 'scans' ? (
           <div className={`${cardBg} rounded-xl sm:rounded-2xl p-4 sm:p-6`}>
             <h3 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-4 sm:mb-6`}>Recent Scan Activity</h3>
-            <div className="space-y-3 sm:space-y-4">
-              {recentScans.map((scan, index) => (
-                <div key={index} className={`flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/5' : 'hover:bg-white/60'}`}>
-                  <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                    <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${darkMode ? 'bg-emerald-500/20' : 'bg-emerald-100'} flex-shrink-0`}>
-                      <CheckCircle className={`w-4 h-4 sm:w-5 sm:h-5 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+              </div>
+            ) : recentScans.length === 0 ? (
+              <div className="text-center py-8">
+                <AlertCircle className={`w-12 h-12 mx-auto mb-4 ${textMuted}`} />
+                <p className={`${textSecondary}`}>No recent scans</p>
+              </div>
+            ) : (
+              <div className="space-y-3 sm:space-y-4">
+                {recentScans.map((scan) => (
+                  <div 
+                    key={scan.id} 
+                    onClick={() => setSelectedScan(scan)}
+                    className={`flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl transition-all cursor-pointer ${darkMode ? 'hover:bg-white/5' : 'hover:bg-white/60'}`}
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${scan.status === 'success' ? (darkMode ? 'bg-emerald-500/20' : 'bg-emerald-100') : (darkMode ? 'bg-red-500/20' : 'bg-red-100')} flex-shrink-0`}>
+                        {scan.status === 'success' ? (
+                          <CheckCircle className={`w-4 h-4 sm:w-5 sm:h-5 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                        ) : (
+                          <XCircle className={`w-4 h-4 sm:w-5 sm:h-5 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className={`font-semibold text-sm sm:text-base ${textPrimary} truncate`}>{scan.studentName}</h4>
+                        <p className={`text-xs sm:text-sm ${textSecondary}`}>{scan.gate} • {scan.time}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className={`font-semibold text-sm sm:text-base ${textPrimary} truncate`}>{scan.studentName}</h4>
-                      <p className={`text-xs sm:text-sm ${textSecondary}`}>{scan.gate} • {scan.time}</p>
-                    </div>
+                    <ChevronRight className={`w-4 h-4 sm:w-5 sm:h-5 ${textMuted} flex-shrink-0`} />
                   </div>
-                  <ChevronRight className={`w-4 h-4 sm:w-5 sm:h-5 ${textMuted} flex-shrink-0`} />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
-            {filteredDevices.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+              </div>
+            ) : filteredDevices.length === 0 ? (
               <div className={`${cardBg} rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center`}>
                 <AlertCircle className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 ${textMuted}`} />
                 <h3 className={`text-lg sm:text-xl font-bold ${textPrimary} mb-2`}>No devices found</h3>
-                <p className={textSecondary}>Try adjusting your search or filters</p>
+                <p className={`${textSecondary}`}>Try adjusting your search or filters</p>
               </div>
             ) : (
               filteredDevices.map((device) => (
@@ -486,9 +548,9 @@ export default function AdminDashboard() {
                         </p>
                         <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
                           <span className={`${textMuted}`}>{device.department}</span>
-                          <span className={textMuted}>•</span>
+                          <span className={`${textMuted}`}>•</span>
                           <span className={`${textMuted}`}>{device.course}</span>
-                          <span className={textMuted}>•</span>
+                          <span className={`${textMuted}`}>•</span>
                           <span className={`${textMuted}`}>Registered: {device.registrationDate}</span>
                         </div>
                       </div>
@@ -542,6 +604,225 @@ export default function AdminDashboard() {
           onApprove={handleApprove}
           onReject={handleReject}
         />
+      )}
+
+      {/* Scan Detail Modal */}
+      {selectedScan && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedScan(null)}>
+          <div 
+            className={`${darkMode ? 'bg-black border-white/10' : 'bg-white border-gray-200'} rounded-2xl w-full max-w-md shadow-2xl border max-h-[90vh] overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className={`text-2xl font-bold ${textPrimary}`}>Scan Details</h2>
+                <button
+                  onClick={() => setSelectedScan(null)}
+                  className={`p-2 rounded-lg transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
+                >
+                  <X className={`w-5 h-5 ${textSecondary}`} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Status */}
+                <div className={`p-4 rounded-xl ${selectedScan.status === 'success' 
+                  ? (darkMode ? 'bg-emerald-500/20 border border-emerald-500/30' : 'bg-emerald-50 border border-emerald-200')
+                  : (darkMode ? 'bg-red-500/20 border border-red-500/30' : 'bg-red-50 border border-red-200')
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {selectedScan.status === 'success' ? (
+                      <CheckCircle className={`w-6 h-6 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    ) : (
+                      <XCircle className={`w-6 h-6 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
+                    )}
+                    <div>
+                      <p className={`text-sm font-semibold ${selectedScan.status === 'success' 
+                        ? (darkMode ? 'text-emerald-400' : 'text-emerald-700')
+                        : (darkMode ? 'text-red-400' : 'text-red-700')
+                      }`}>
+                        {selectedScan.status === 'success' ? 'Access Granted' : 'Access Denied'}
+                      </p>
+                      <p className={`text-xs ${textSecondary}`}>
+                        {selectedScan.status === 'success' ? 'Successfully scanned at gate' : 'Access was denied'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Student Information */}
+                <div className={`p-4 rounded-xl ${darkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <h3 className={`text-lg font-semibold ${textPrimary} mb-3 flex items-center gap-2`}>
+                    <User className="w-5 h-5" />
+                    Student Information
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className={`text-sm ${textSecondary}`}>Name:</span>
+                      <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.studentName}</span>
+                    </div>
+                    {selectedScan.studentId && (
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${textSecondary}`}>Student ID:</span>
+                        <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.studentId}</span>
+                      </div>
+                    )}
+                    {selectedScan.studentDepartment && (
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${textSecondary}`}>Department:</span>
+                        <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.studentDepartment}</span>
+                      </div>
+                    )}
+                    {selectedScan.studentCourse && (
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${textSecondary}`}>Course:</span>
+                        <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.studentCourse}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Gate Information */}
+                <div className={`p-4 rounded-xl ${darkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <h3 className={`text-lg font-semibold ${textPrimary} mb-3 flex items-center gap-2`}>
+                    <MapPin className="w-5 h-5" />
+                    Gate Information
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className={`text-sm ${textSecondary}`}>Gate Name:</span>
+                      <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.gate}</span>
+                    </div>
+                    {selectedScan.gateLocation && (
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${textSecondary}`}>Location:</span>
+                        <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.gateLocation}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Device Information */}
+                <div className={`p-4 rounded-xl ${darkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <h3 className={`text-lg font-semibold ${textPrimary} mb-3 flex items-center gap-2`}>
+                    <Laptop className="w-5 h-5" />
+                    Device Information
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className={`text-sm ${textSecondary}`}>Device:</span>
+                      <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.device}</span>
+                    </div>
+                    {selectedScan.deviceType && (
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${textSecondary}`}>Type:</span>
+                        <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.deviceType}</span>
+                      </div>
+                    )}
+                    {selectedScan.deviceSerial && (
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${textSecondary}`}>Serial Number:</span>
+                        <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.deviceSerial}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Time Information */}
+                <div className={`p-4 rounded-xl ${darkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <h3 className={`text-lg font-semibold ${textPrimary} mb-3 flex items-center gap-2`}>
+                    <Clock className="w-5 h-5" />
+                    Scan Time
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className={`text-sm ${textSecondary}`}>Date & Time:</span>
+                      <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.fullTimestamp || selectedScan.time}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Guard */}
+                {selectedScan.securityGuard && (
+                  <div className={`p-4 rounded-xl ${darkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                    <h3 className={`text-lg font-semibold ${textPrimary} mb-3 flex items-center gap-2`}>
+                      <Shield className="w-5 h-5" />
+                      Security Personnel
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className={`text-sm ${textSecondary}`}>Guard Name:</span>
+                        <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.securityGuard}</span>
+                      </div>
+                      {selectedScan.securityGuardId && (
+                        <div className="flex justify-between">
+                          <span className={`text-sm ${textSecondary}`}>Guard ID:</span>
+                          <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.securityGuardId}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setSelectedScan(null)}
+                className="w-full mt-6 px-4 py-3 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${darkMode ? 'bg-black border-white/10' : 'bg-white border-gray-200'} border rounded-2xl w-full max-w-md shadow-2xl`}>
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className={`p-3 rounded-full ${darkMode ? 'bg-red-500/20' : 'bg-red-100'}`}>
+                  <LogOut className={`w-6 h-6 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
+                </div>
+                <div>
+                  <h2 className={`text-xl font-bold ${textPrimary}`}>Confirm Logout</h2>
+                  <p className={`text-sm ${textSecondary}`}>Are you sure you want to log out?</p>
+                </div>
+              </div>
+              
+              <p className={`text-sm mb-6 ${textSecondary}`}>
+                You will need to log in again to access your account.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className={`flex-1 px-4 py-2.5 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Clear storage synchronously first (before closing modal)
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('student');
+                    localStorage.removeItem('rememberMe');
+                    sessionStorage.removeItem('token');
+                    sessionStorage.removeItem('student');
+                    // Close modal
+                    setShowLogoutConfirm(false);
+                    // Navigate to landing page immediately - this will cause full page reload
+                    window.location.replace('/');
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700 transition-all shadow-lg"
+                >
+                  Yes, Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

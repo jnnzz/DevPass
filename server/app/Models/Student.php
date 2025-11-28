@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
 
 class Student extends Authenticatable
@@ -33,6 +34,16 @@ class Student extends Authenticatable
     // Automatically hash password when setting it
     public function setPasswordAttribute($value)
     {
-        $this->attributes['password'] = bcrypt($value);
+        // Only hash if it's not already hashed (to prevent double hashing)
+        if (!empty($value)) {
+            // Check if value is already a bcrypt hash (starts with $2y$)
+            if (strlen($value) === 60 && strpos($value, '$2y$') === 0) {
+                // Already hashed, use as is
+                $this->attributes['password'] = $value;
+            } else {
+                // Not hashed, hash it
+                $this->attributes['password'] = Hash::make($value);
+            }
+        }
     }
 }
