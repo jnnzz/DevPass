@@ -46,7 +46,7 @@ class StudentController extends Controller
     {
         $deleted = $this->studentService->deleteStudent($id);
         return $deleted
-            ? response()->json(['message' => 'Student deleted', 200])
-            : response()->json(['message' => 'Student not found', 404]);
+            ? response()->json(['message' => 'Student deleted'], 200)
+            : response()->json(['message' => 'Student not found'], 404);
     }
 }
