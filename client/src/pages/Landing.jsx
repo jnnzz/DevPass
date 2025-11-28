@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, User, Zap, Shield, Rocket, Moon, Sun, Mail, GraduationCap, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, Lock, User, Zap, Shield, Rocket, Moon, Sun, Mail, GraduationCap, Calendar, X } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,9 +7,13 @@ export default function Landing() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordStep, setForgotPasswordStep] = useState('email'); // 'email' or 'reset'
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
+    id: '',
     name: '',
     email: '',
     course: '',
@@ -19,10 +23,20 @@ export default function Landing() {
     password: '',
     password_confirmation: '',
   });
+
+  const [forgotPasswordData, setForgotPasswordData] = useState({
+    email: '',
+    code: '',
+    password: '',
+    password_confirmation: '',
+  });
   
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
+  const [forgotPasswordError, setForgotPasswordError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -30,6 +44,41 @@ export default function Landing() {
       [e.target.name]: e.target.value
     });
   };
+
+  // Helper function to determine user role and redirect path
+  const getRedirectPath = (user) => {
+    if (!user) return '/student/dashboard';
+    
+    const course = user.course?.toLowerCase() || '';
+    const email = user.email?.toLowerCase() || '';
+    
+    // Check if admin (by course or email)
+    if (course === 'admin' || email.includes('admin@devpass')) {
+      return '/admin/dashboard';
+    }
+    
+    // Check if security/personnel (by course or email)
+    if (course === 'security' || course === 'personnel' || email.includes('security@devpass')) {
+      return '/personnel/dashboard';
+    }
+    
+    // Default to student dashboard
+    return '/student/dashboard';
+  };
+
+  // Check if user is already logged in on page load
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (authService.isAuthenticated()) {
+        const student = authService.getCurrentStudent();
+        if (student) {
+          const redirectPath = getRedirectPath(student);
+          navigate(redirectPath);
+        }
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,13 +92,14 @@ export default function Landing() {
         const result = await authService.login({
           id: formData.id,
           password: formData.password,
-        });
+        }, rememberMe);
         setMessage('✅ Login successful!');
         console.log('Logged in user:', result);
         
-        // Redirect to students page after successful login
+        // Redirect based on user role
+        const redirectPath = getRedirectPath(result.student);
         setTimeout(() => {
-          navigate('/student/dashboard');
+          navigate(redirectPath);
         }, 1000);
         
       } else {
@@ -91,9 +141,25 @@ export default function Landing() {
         }, 1500);
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.response?.data?.errors?.email?.[0] || 'Operation failed';
+      console.error('Login/Register error:', err);
+      let errorMessage = 'Operation failed';
+      
+      if (err.response?.data) {
+        // Check for validation errors
+        if (err.response.data.errors) {
+          // Get first error from any field
+          const errorFields = Object.keys(err.response.data.errors);
+          if (errorFields.length > 0) {
+            errorMessage = err.response.data.errors[errorFields[0]][0];
+          }
+        } else if (err.response.data.message) {
+          errorMessage = err.response.data.message;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setError(`❌ ${errorMessage}`);
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -378,11 +444,10 @@ export default function Landing() {
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
                       <input
                         name="password"
                         type={showPassword ? 'text' : 'password'}
-                        className={`w-full pl-12 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        className={`w-full pl-4 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                         placeholder="••••••••"
                         value={formData.password}
                         onChange={handleChange}
@@ -404,16 +469,22 @@ export default function Landing() {
                         Confirm Password
                       </label>
                       <div className="relative">
-                        <Lock className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
                         <input
                           name="password_confirmation"
                           type={showPassword ? 'text' : 'password'}
-                          className={`w-full pl-12 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                          className={`w-full pl-4 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                           placeholder="••••••••"
                           value={formData.password_confirmation}
                           onChange={handleChange}
                           required
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className={`absolute right-4 top-3.5 transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
                       </div>
                     </div>
                   )}
@@ -421,12 +492,21 @@ export default function Landing() {
                   {isLogin && (
                     <div className="flex items-center justify-between">
                       <label className="flex items-center cursor-pointer gap-2">
-                        <input type="checkbox" className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600`} />
+                        <input 
+                          type="checkbox" 
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600`} 
+                        />
                         <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Remember me</span>
                       </label>
-                      <a href="#" className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(true)}
+                        className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                      >
                         Forgot password?
-                      </a>
+                      </button>
                     </div>
                   )}
 
@@ -468,6 +548,238 @@ export default function Landing() {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${darkMode ? 'bg-black border-white/10' : 'bg-white border-gray-200'} border rounded-2xl w-full max-w-md shadow-2xl`}>
+            <div className="flex items-center justify-between p-6 border-b" style={{borderColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}}>
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                {forgotPasswordStep === 'email' ? 'Reset Password' : 'Enter Reset Code'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotPasswordStep('email');
+                  setForgotPasswordData({ email: '', code: '', password: '', password_confirmation: '' });
+                  setForgotPasswordMessage('');
+                  setForgotPasswordError('');
+                }}
+                className={`p-2 rounded-lg transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
+              >
+                <X className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {forgotPasswordStep === 'email' ? (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  setForgotPasswordMessage('');
+                  setForgotPasswordError('');
+                  setForgotPasswordLoading(true);
+
+                  try {
+                    await authService.forgotPassword(forgotPasswordData.email);
+                    setForgotPasswordMessage('Password reset code sent to your email!');
+                    setTimeout(() => {
+                      setForgotPasswordStep('reset');
+                    }, 1500);
+                  } catch (err) {
+                    const errorMessage = err.response?.data?.message || err.response?.data?.errors?.email?.[0] || 'Failed to send reset code';
+                    setForgotPasswordError(`❌ ${errorMessage}`);
+                  } finally {
+                    setForgotPasswordLoading(false);
+                  }
+                }}>
+                  <div className="mb-4">
+                    <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                      <input
+                        type="email"
+                        value={forgotPasswordData.email}
+                        onChange={(e) => setForgotPasswordData({ ...forgotPasswordData, email: e.target.value })}
+                        className={`w-full pl-12 pr-4 py-3 ${darkMode ? 'bg-gray-900/50 border-gray-800 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        placeholder="student@example.com"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {forgotPasswordMessage && (
+                    <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
+                      {forgotPasswordMessage}
+                    </div>
+                  )}
+
+                  {forgotPasswordError && (
+                    <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+                      {forgotPasswordError}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setForgotPasswordData({ email: '', code: '', password: '', password_confirmation: '' });
+                        setForgotPasswordMessage('');
+                        setForgotPasswordError('');
+                      }}
+                      className={`flex-1 px-4 py-2.5 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={forgotPasswordLoading}
+                      className="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {forgotPasswordLoading ? 'Sending...' : 'Send Code'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  setForgotPasswordMessage('');
+                  setForgotPasswordError('');
+
+                  if (forgotPasswordData.password !== forgotPasswordData.password_confirmation) {
+                    setForgotPasswordError('❌ Passwords do not match!');
+                    return;
+                  }
+
+                  setForgotPasswordLoading(true);
+
+                  try {
+                    await authService.resetPassword(
+                      forgotPasswordData.email,
+                      forgotPasswordData.code,
+                      forgotPasswordData.password,
+                      forgotPasswordData.password_confirmation
+                    );
+                    setForgotPasswordMessage('✅ Password reset successful! You can now login.');
+                    setTimeout(() => {
+                      setShowForgotPassword(false);
+                      setForgotPasswordStep('email');
+                      setForgotPasswordData({ email: '', code: '', password: '', password_confirmation: '' });
+                      setForgotPasswordMessage('');
+                      setForgotPasswordError('');
+                    }, 2000);
+                  } catch (err) {
+                    const errorMessage = err.response?.data?.message || err.response?.data?.errors?.code?.[0] || 'Failed to reset password';
+                    setForgotPasswordError(`❌ ${errorMessage}`);
+                  } finally {
+                    setForgotPasswordLoading(false);
+                  }
+                }}>
+                  <div className="space-y-4">
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Reset Code
+                      </label>
+                      <input
+                        type="text"
+                        value={forgotPasswordData.code}
+                        onChange={(e) => setForgotPasswordData({ ...forgotPasswordData, code: e.target.value })}
+                        className={`w-full px-4 py-3 ${darkMode ? 'bg-gray-900/50 border-gray-800 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                        placeholder="Enter 6-digit code"
+                        maxLength="6"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={forgotPasswordData.password}
+                          onChange={(e) => setForgotPasswordData({ ...forgotPasswordData, password: e.target.value })}
+                          className={`w-full pl-4 pr-12 py-3 ${darkMode ? 'bg-gray-900/50 border-gray-800 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                          placeholder="••••••••"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className={`absolute right-4 top-3.5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`}
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={forgotPasswordData.password_confirmation}
+                          onChange={(e) => setForgotPasswordData({ ...forgotPasswordData, password_confirmation: e.target.value })}
+                          className={`w-full pl-4 pr-12 py-3 ${darkMode ? 'bg-gray-900/50 border-gray-800 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                          placeholder="••••••••"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className={`absolute right-4 top-3.5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`}
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {forgotPasswordMessage && (
+                      <div className="p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
+                        {forgotPasswordMessage}
+                      </div>
+                    )}
+
+                    {forgotPasswordError && (
+                      <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+                        {forgotPasswordError}
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgotPasswordStep('email');
+                          setForgotPasswordData({ ...forgotPasswordData, code: '', password: '', password_confirmation: '' });
+                          setForgotPasswordMessage('');
+                          setForgotPasswordError('');
+                        }}
+                        className={`flex-1 px-4 py-2.5 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={forgotPasswordLoading}
+                        className="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {forgotPasswordLoading ? 'Resetting...' : 'Reset Password'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
