@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsQR from 'jsqr';
+import SecuritySettingsModal from './SecuritySettingsModal';
 import { 
   QrCode, 
   Shield, 
@@ -199,6 +200,8 @@ export default function SecurityPersonnel() {
   const [scanHistory, setScanHistory] = useState([]);
   const [error, setError] = useState(null);
   const [selectedScan, setSelectedScan] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+
   const [stats, setStats] = useState({
     scansToday: 0,
     successRate: 0,
@@ -779,9 +782,9 @@ export default function SecurityPersonnel() {
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-3">
-              <button className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
+              {/* <button className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
                 <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${textSecondary}`} />
-              </button>
+              </button> */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
@@ -792,7 +795,10 @@ export default function SecurityPersonnel() {
                   <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
                 )}
               </button>
-              <button className={`hidden sm:block p-2 rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
+              <button className={`hidden sm:block p-2 rounded-xl transition-all ${darkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
+                onClick={() => setShowSettings(true)}
+
+>
                 <Settings className={`w-5 h-5 ${textSecondary}`} />
               </button>
               <button 
@@ -1170,8 +1176,24 @@ export default function SecurityPersonnel() {
             </div>
           </div>
         </div>
+        
       )}
-
+      {/* Add this with your other modals */}
+      {showSettings && (
+        <SecuritySettingsModal 
+          darkMode={darkMode} 
+          onClose={() => setShowSettings(false)}
+          securityData={{
+            name: "John Security", // Replace with actual data from your auth service
+            email: "john.security@university.edu",
+            phone: "+63 912 345 6789",
+            employeeId: "SEC001",
+            assignedGate: gate, // Current gate from state
+            role: "Security Personnel",
+            joinDate: "January 15, 2024"
+          }}
+        />
+      )}
       <style>{`
         @keyframes scan {
           0% { transform: translateY(0); }
