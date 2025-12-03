@@ -21,7 +21,7 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'id' => 'required|string|min:6|max:8',
+            'id' => 'required|string|min:6|max:8|unique:students,id',
             'name' => 'required|string|max:100',
             'email' => 'required|email|unique:students,email',
             'password' => 'required|string|min:6|confirmed',
@@ -41,22 +41,69 @@ class AuthController extends Controller
     }
 
     /**
+     * Request password reset code
+     */
+    public function forgotPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email|exists:students,email',
+        ]);
+
+        $result = $this->authService->requestPasswordReset($validated['email']);
+
+        return response()->json([
+            'message' => 'Password reset code sent to your email',
+        ]);
+    }
+
+    /**
+     * Reset password with code
+     */
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email|exists:students,email',
+            'code' => 'required|string|size:6',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $result = $this->authService->resetPassword($validated);
+
+        return response()->json([
+            'message' => 'Password reset successful',
+        ]);
+    }
+
+    /**
      * Login student
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'id' => 'required|string',
-            'password' => 'required|string',
-        ]);
+        try {
+            $credentials = $request->validate([
+                'id' => 'required|string',
+                'password' => 'required|string',
+            ]);
 
-        $result = $this->authService->login($credentials);
+            $result = $this->authService->login($credentials);
 
-        return response()->json([
-            'message' => 'Login successful',
-            'student' => $result['student'],
-            'token' => $result['token']
-        ]);
+            return response()->json([
+                'message' => 'Login successful',
+                'student' => $result['student'],
+                'token' => $result['token']
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Login failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Login error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'An error occurred during login. Please try again.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     /**
