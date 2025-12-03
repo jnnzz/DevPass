@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Lock, User, Zap, Shield, Rocket, Moon, Sun, Mail, GraduationCap, Calendar, X, ChevronRight, ChevronLeft, Check, Home as HomeIcon, Info, LogIn, Users, Globe, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
+import {motion} from 'framer-motion';
 
 export default function Landing() {
   const [isLogin, setIsLogin] = useState(true);
@@ -243,7 +244,7 @@ export default function Landing() {
               <button
                 type="button"
                 onClick={nextStep}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+                className="flex items-center cursor-pointer gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
               >
                 Next Step
                 <ChevronRight className="w-5 h-5" />
@@ -314,7 +315,7 @@ export default function Landing() {
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all cursor-pointer"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Previous
@@ -322,7 +323,7 @@ export default function Landing() {
               <button
                 type="button"
                 onClick={nextStep}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+                className="flex items-center cursor-pointer gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
               >
                 Next Step
                 <ChevronRight className="w-5 h-5" />
@@ -403,7 +404,7 @@ export default function Landing() {
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all cursor-pointer"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Previous
@@ -411,7 +412,7 @@ export default function Landing() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-3 cursor-pointer bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Check className="w-5 h-5" />
                 {loading ? 'Creating Account...' : 'Complete Registration'}
@@ -462,77 +463,179 @@ export default function Landing() {
     ? 'text-gray-400 hover:text-gray-200 border-transparent'
     : 'text-gray-600 hover:text-gray-800 border-transparent';
 
-  const renderHome = () => (
-    <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
-      <div className="w-full max-w-7xl grid lg:grid-cols-2 gap-8 lg:gap-0 items-center">
-        {/* Left Side - Information */}
-        <div className="lg:pr-12">
-          <div className="mb-12">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-5xl lg:text-6xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-600 bg-clip-text text-transparent">
-                DevPass
-              </h1>
-            </div>
-            <p className={`text-xl lg:text-2xl ${darkMode ? 'text-gray-300' : 'text-gray-700'} font-light leading-relaxed`}>
-              Next-gen QR-based device registration platform for seamless campus entry
-            </p>
-          </div>
+  
 
-          <div className="space-y-5 mb-12">
-            <div className="flex items-start gap-4 group">
-              <div className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}>
-                <Zap className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
-              </div>
+const renderHome = () => (
+  <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
+    <div className="w-full max-w-7xl grid lg:grid-cols-2 gap-8 lg:gap-0 items-center">
+      {/* Left Side - Information */}
+      <div className="lg:pr-12">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-12"
+        >
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="flex items-center gap-3 mb-6"
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+              className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg"
+            >
+              <Zap className="w-6 h-6 text-white" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="text-5xl lg:text-6xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-600 bg-clip-text text-transparent"
+            >
+              DevPass
+            </motion.h1>
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className={`text-xl lg:text-2xl ${darkMode ? 'text-gray-300' : 'text-gray-700'} font-light leading-relaxed`}
+          >
+            Next-gen QR-based device registration platform for seamless campus entry
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="space-y-5 mb-12"
+        >
+          {[
+            {
+              icon: <Zap className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />,
+              title: "Digital Gate Pass",
+              description: "Automated QR verification replaces manual processes instantly"
+            },
+            {
+              icon: <Shield className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />,
+              title: "Enhanced Security",
+              description: "Real-time validation powered by centralized database"
+            },
+            {
+              icon: <Rocket className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />,
+              title: "Quick & Efficient",
+              description: "Streamline operations and eliminate entry bottlenecks"
+            }
+          ].map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.6 + (index * 0.1) }}
+              whileHover={{ x: 5 }}
+              className="flex items-start gap-4 group"
+            >
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}
+              >
+                {item.icon}
+              </motion.div>
               <div>
-                <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>Digital Gate Pass</h3>
-                <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Automated QR verification replaces manual processes instantly</p>
+                <motion.h3
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.7 + (index * 0.1) }}
+                  className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}
+                >
+                  {item.title}
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.8 + (index * 0.1) }}
+                  className={darkMode ? 'text-gray-400' : 'text-gray-600'}
+                >
+                  {item.description}
+                </motion.p>
               </div>
-            </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
 
-            <div className="flex items-start gap-4 group">
-              <div className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}>
-                <Shield className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
-              </div>
-              <div>
-                <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>Enhanced Security</h3>
-                <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Real-time validation powered by centralized database</p>
-              </div>
-            </div>
+      {/* Right Side - Form */}
+      <div className="lg:pl-12">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          // whileHover={{ scale: 1.01 }}
+          className={`${formBg} rounded-3xl p-8 lg:p-10 shadow-2xl hover:shadow-3xl transition-all duration-500`}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="text-center mb-8"
+          >
+            <motion.h2
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.5 }}
+              className={`text-3xl lg:text-4xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}
+            >
+              {isLogin ? 'Welcome Back' : 'Join DevPass'}
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.6 }}
+              className={formDescText}
+            >
+              {isLogin ? 'Sign in to access your digital pass' : 'Create your account in seconds'}
+            </motion.p>
+          </motion.div>
 
-            <div className="flex items-start gap-4 group">
-              <div className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} rounded-xl p-3 transition-all duration-300`}>
-                <Rocket className={`w-5 h-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
-              </div>
-              <div>
-                <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>Quick & Efficient</h3>
-                <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Streamline operations and eliminate entry bottlenecks</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Form */}
-        <div className="lg:pl-12">
-          <div className={`${formBg} rounded-3xl p-8 lg:p-10 shadow-2xl hover:shadow-3xl transition-all duration-500`}>
-            <div className="text-center mb-8">
-              <h2 className={`text-3xl lg:text-4xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                {isLogin ? 'Welcome Back' : 'Join DevPass'}
-              </h2>
-              <p className={formDescText}>
-                {isLogin ? 'Sign in to access your digital pass' : 'Create your account in seconds'}
-              </p>
-            </div>
-
-            {/* Registration Steps Indicator */}
-            {!isLogin && (
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  {[1, 2, 3].map((step) => (
-                    <div key={step} className="flex flex-col items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${
+          {/* Registration Steps Indicator */}
+          {!isLogin && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+              className="mb-8"
+            >
+              <motion.div 
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+                className={`flex-1 h-1 ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} -translate-y-5 mx-2 origin-left`}
+              >
+                <motion.div
+                  layout
+                  className={`h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300`}
+                  style={{ width: `${((registerStep - 1) / 2) * 100}%` }}
+                ></motion.div>
+              </motion.div>
+              <div className="flex items-center justify-between mb-4">
+                {[1, 2, 3].map((step) => (
+                  <motion.div
+                    key={step}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", delay: 0.7 + (step * 0.1) }}
+                    whileHover={{ scale: 1.1 }}
+                    className="flex flex-col items-center"
+                  >
+                    <motion.div
+                      layout
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-300 ${
                         step === registerStep
                           ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                           : step < registerStep
@@ -540,233 +643,371 @@ export default function Landing() {
                           : darkMode
                           ? 'bg-gray-800 text-gray-400'
                           : 'bg-gray-200 text-gray-600'
-                      }`}>
-                        {step < registerStep ? <Check className="w-5 h-5" /> : step}
-                      </div>
-                      <span className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {step === 1 ? 'Personal' : step === 2 ? 'Academic' : 'Security'}
-                      </span>
-                    </div>
-                  ))}
-                  <div className={`flex-1 h-1 ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} -translate-y-5 mx-2`}>
-                    <div 
-                      className={`h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300`}
-                      style={{ width: `${((registerStep - 1) / 2) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Toggle Buttons */}
-            <div className={`flex gap-2 ${toggleBg} rounded-xl p-1 mb-8`}>
-              <button
-                onClick={() => {
-                  setIsLogin(true);
-                  setRegisterStep(1);
-                }}
-                className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 cursor-pointer ${
-                  isLogin 
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
-                    : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                Login
-              </button>
-              <button
-                onClick={() => {
-                  setIsLogin(false);
-                  setRegisterStep(1);
-                }}
-                className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
-                  !isLogin 
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
-                    : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                Register
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              {isLogin ? (
-                <div className="space-y-5">
-                  <div>
-                    <label className={`block text-sm font-semibold ${formText} mb-3`}>
-                      Student ID
-                    </label>
-                    <div className="relative">
-                      <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
-                      <input
-                        name="id"
-                        type="text"
-                        className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                        placeholder="e.g., 23664035"
-                        value={formData.id}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-semibold ${formText} mb-3`}>
-                      Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        className={`w-full pl-4 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className={`absolute right-4 top-3.5 transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center cursor-pointer gap-2">
-                      <input 
-                        type="checkbox" 
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600`} 
-                      />
-                      <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Remember me</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPassword(true)}
-                      className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                      }`}
                     >
-                      Forgot password?
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Signing in...' : 'Sign In'}
-                  </button>
-                </div>
-              ) : (
-                renderRegisterStep()
-              )}
-            </form>
-
-            {/* Success/Error Messages */}
-            {message && (
-              <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
-                {message}
+                      {step < registerStep ? (
+                        <motion.div
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ type: "spring" }}
+                        >
+                          <Check className="w-5 h-5" />
+                        </motion.div>
+                      ) : (
+                        step
+                      )}
+                    </motion.div>
+                    <span className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {step === 1 ? 'Personal' : step === 2 ? 'Academic' : 'Security'}
+                    </span>
+                  </motion.div>
+                ))}
               </div>
-            )}
+            </motion.div>
+          )}
 
-            {error && (
-              <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
-                {error}
-              </div>
-            )}
+          {/* Toggle Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.6 }}
+            className={`flex gap-2 ${toggleBg} rounded-xl p-1 mb-8`}
+          >
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                setIsLogin(true);
+                setRegisterStep(1);
+              }}
+              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 cursor-pointer ${
+                isLogin 
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
+                  : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Login
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                setIsLogin(false);
+                setRegisterStep(1);
+              }}
+              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 cursor-pointer ${
+                !isLogin 
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' 
+                  : darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Register
+            </motion.button>
+          </motion.div>
 
-            <div className="mt-8 text-center">
-              <p className={formDescText}>
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <button
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    setRegisterStep(1);
-                  }}
-                  className={`font-semibold cursor-pointer transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+          <form onSubmit={handleSubmit}>
+            {isLogin ? (
+              <motion.div
+                key="login-form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-5"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
                 >
-                  {isLogin ? 'Sign up' : 'Sign in'}
-                </button>
-              </p>
-            </div>
-          </div>
-        </div>
+                  <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                    Student ID
+                  </label>
+                  <div className="relative">
+                    <User className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
+                    <input
+                      name="id"
+                      type="text"
+                      className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                      placeholder="e.g., 23664035"
+                      value={formData.id}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <label className={`block text-sm font-semibold ${formText} mb-3`}>
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      className={`w-full pl-4 pr-12 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                    />
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute right-4 top-3.5 transition-colors ${darkMode ? 'text-gray-600 hover:text-gray-400' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </motion.button>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                  className="flex items-center justify-between"
+                >
+                  {/* <label className="flex items-center cursor-pointer gap-2">
+                    <input 
+                      type="checkbox" 
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className={`w-4 h-4 rounded ${checkboxColor} accent-blue-600`} 
+                    />
+                    <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Remember me</span>
+                  </label>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className={`text-sm font-medium transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                  >
+                    Forgot password?
+                  </motion.button> */}
+                </motion.div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r cursor-pointer from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Signing in...' : 'Sign In'}
+                </motion.button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="register-form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderRegisterStep()}
+              </motion.div>
+            )}
+          </form>
+
+          {/* Success/Error Messages */}
+          {(message || error) && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className={`mt-4 p-4 rounded ${message ? 'bg-green-50 border-l-4 border-green-500 text-green-700' : 'bg-red-50 border-l-4 border-red-500 text-red-700'}`}
+            >
+              {message || error}
+            </motion.div>
+          )}
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.8 }}
+            className="mt-8 text-center"
+          >
+            <p className={formDescText}>
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setRegisterStep(1);
+                }}
+                className={`font-semibold cursor-pointer transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+              >
+                {isLogin ? 'Sign up' : 'Sign in'}
+              </motion.button>
+            </p>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
-  );
+  </div>
+);
 
   const renderAbout = () => (
-    <div className="relative z-10 min-h-[calc(100vh-80px)] flex items-center justify-center p-8">
-      <div className="w-full max-w-6xl">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl lg:text-6xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-600 bg-clip-text text-transparent mb-4">
-            About DevPass
-          </h1>
-          <p className={`text-xl ${darkMode ? 'text-gray-300' : 'text-gray-700'} max-w-3xl mx-auto`}>
-            Revolutionizing campus security with cutting-edge QR technology
-          </p>
-        </div>
+  <div className="relative z-10 min-h-[calc(100vh-80px)] flex items-center justify-center p-8">
+    <div className="w-full max-w-6xl">
+      {/* Title Section */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-center mb-16"
+      >
+        <motion.h1
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-5xl lg:text-6xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-600 bg-clip-text text-transparent mb-4"
+        >
+          About DevPass
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className={`text-xl ${darkMode ? 'text-gray-300' : 'text-gray-700'} max-w-3xl mx-auto`}
+        >
+          Revolutionizing campus security with cutting-edge QR technology
+        </motion.p>
+      </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          <div className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'} border rounded-2xl p-8 backdrop-blur-sm hover:scale-105 transition-all duration-300`}>
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-6">
-              <Shield className="w-7 h-7 text-white" />
-            </div>
-            <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Secure & Reliable</h3>
-            <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-              Advanced encryption and real-time verification ensure maximum security for all campus entries.
-            </p>
-          </div>
-
-          <div className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'} border rounded-2xl p-8 backdrop-blur-sm hover:scale-105 transition-all duration-300`}>
-            <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-6">
-              <Zap className="w-7 h-7 text-white" />
-            </div>
-            <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Lightning Fast</h3>
-            <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-              Instant QR code generation and scanning reduces wait times by 90% compared to manual systems.
-            </p>
-          </div>
-
-          <div className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'} border rounded-2xl p-8 backdrop-blur-sm hover:scale-105 transition-all duration-300`}>
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-6">
-              <Users className="w-7 h-7 text-white" />
-            </div>
-            <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>User-Friendly</h3>
-            <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-              Intuitive interface designed for students, staff, and security personnel with minimal training required.
-            </p>
-          </div>
-        </div>
-
-        <div className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'} border rounded-2xl p-8 backdrop-blur-sm`}>
-          <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Our Mission</h2>
-          <p className={`text-lg mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            DevPass was created to modernize campus security systems by replacing outdated manual processes with 
-            a digital, efficient, and secure QR-based solution. We aim to enhance the campus experience for everyone 
-            while maintaining the highest security standards.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>5000+ Students Registered</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>99.9% System Uptime</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>24/7 Support</span>
-            </div>
-          </div>
-        </div>
+      {/* Features Grid */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+        {[
+  {
+    icon: <Shield className="w-7 h-7 text-cyan-400" />,
+    title: "Secure & Reliable",
+    description: "Advanced encryption and real-time verification ensure maximum security for all campus entries.",
+    gradient: "from-cyan-500 to-blue-600",
+    delay: 0.3
+  },
+  {
+    icon: <Zap className="w-7 h-7 text-cyan-400" />,
+    title: "Lightning Fast",
+    description: "Instant QR code generation and scanning reduces wait times by 90% compared to manual systems.",
+    gradient: "from-cyan-500 to-blue-600",
+    delay: 0.4
+  },
+  {
+    icon: <Users className="w-7 h-7 text-cyan-400" />,
+    title: "User-Friendly",
+    description: "Intuitive interface designed for students, staff, and security personnel with minimal training required.",
+    gradient: "from-cyan-500 to-blue-600",
+    delay: 0.5
+  }
+].map((feature, index) => (
+  <motion.div
+    key={index}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: feature.delay }}
+    whileHover={{ 
+      scale: 1.05,
+      transition: { duration: 0.2 }
+    }}
+    whileTap={{ scale: 0.98 }}
+    className={`${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30 group-hover:bg-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60 group-hover:bg-cyan-200'} border rounded-2xl p-8 backdrop-blur-sm`}
+  >
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: "spring", stiffness: 200, delay: feature.delay + 0.1 }}
+      className={`w-14 h-14 ${darkMode ? 'bg-cyan-500/20 border border-cyan-500/30' : 'bg-cyan-100 border border-cyan-300/60'} rounded-xl flex items-center justify-center mb-6`}
+    >
+      {feature.icon}
+    </motion.div>
+    <motion.h3
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, delay: feature.delay + 0.2 }}
+      className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}
+    >
+      {feature.title}
+    </motion.h3>
+    <motion.p
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, delay: feature.delay + 0.3 }}
+      className={darkMode ? 'text-gray-300' : 'text-gray-600'}
+    >
+      {feature.description}
+    </motion.p>
+  </motion.div>
+))}
       </div>
+
+      {/* Mission Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+        whileHover={{ scale: 1.01 }}
+        className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'} border rounded-2xl p-8 backdrop-blur-sm`}
+      >
+        <motion.h2
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.7 }}
+          className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}
+        >
+          Our Mission
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className={`text-lg mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+        >
+          DevPass was created to modernize campus security systems by replacing outdated manual processes with 
+          a digital, efficient, and secure QR-based solution. We aim to enhance the campus experience for everyone 
+          while maintaining the highest security standards.
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+          className="flex flex-wrap gap-4"
+        >
+          {[
+            { color: "bg-blue-500", text: "5000+ Students Registered" },
+            { color: "bg-green-500", text: "99.9% System Uptime" },
+            { color: "bg-purple-500", text: "24/7 Support" }
+          ].map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: 0.9 + (index * 0.1) }}
+              whileHover={{ x: 5 }}
+              className="flex items-center gap-2"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", delay: 1 + (index * 0.1) }}
+                className={`w-2 h-2 ${item.color} rounded-full`}
+              ></motion.div>
+              <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                {item.text}
+              </span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.div>
     </div>
-  );
+  </div>
+);
 
   return (
     <div className={`min-h-screen ${bgClass} overflow-hidden transition-colors duration-500`}>
@@ -803,7 +1044,7 @@ export default function Landing() {
               <div className="hidden md:flex items-center gap-6">
                 <button
                   onClick={() => setActiveSection('home')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border-b-2 transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border-b-2 transition-all cursor-pointer ${
                     activeSection === 'home' ? navLinkActive : navLinkInactive
                   }`}
                 >
@@ -812,7 +1053,7 @@ export default function Landing() {
                 </button>
                 <button
                   onClick={() => setActiveSection('about')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border-b-2 transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium border-b-2 transition-all cursor-pointer ${
                     activeSection === 'about' ? navLinkActive : navLinkInactive
                   }`}
                 >
@@ -822,7 +1063,7 @@ export default function Landing() {
               </div>
             </div>
             
-            <button
+            {/* <button
               onClick={() => {
                 setActiveSection('home');
                 setIsLogin(true);
@@ -831,7 +1072,7 @@ export default function Landing() {
             >
               <LogIn className="w-4 h-4" />
               Sign In
-            </button>
+            </button> */}
           </div>
         </div>
       </nav>
