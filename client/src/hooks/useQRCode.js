@@ -5,26 +5,22 @@ export const useQRCode = (devices, studentInfo) => {
   const [qrCodes, setQrCodes] = useState({});
 
   useEffect(() => {
+    if (!devices) {
+      setQrCodes({});
+      return;
+    }
+
     const codes = {};
     devices.forEach(device => {
-      if (device.status === 'active') {
-        const qrData = JSON.stringify({
-          deviceId: device.id,
-          studentId: studentInfo.studentId,
-          studentName: studentInfo.name,
-          deviceType: device.type,
-          brand: device.brand,
-          model: device.model,
-          expiry: device.qrExpiry,
-          timestamp: new Date().toISOString()
-        });
-        
-        const qrDataEncoded = encodeURIComponent(qrData);
+      if (device.status === 'active' && device.qrCodeHash) {
+        // Use the actual QR code hash from the backend
+        // This hash is what the personnel scanner expects
+        const qrDataEncoded = encodeURIComponent(device.qrCodeHash);
         codes[device.id] = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrDataEncoded}`;
       }
     });
     setQrCodes(codes);
-  }, [devices, studentInfo]);
+  }, [devices]);
 
   return qrCodes;
 };

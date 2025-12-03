@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class SecurityGuard extends Model
+{
+    use HasFactory;
+
+    protected $table = 'security_guards';
+    protected $primaryKey = 'guard_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'guard_id',
+        'name',
+        'email',
+        'phone',
+    ];
+
+    public function entryLogs(): HasMany
+    {
+        return $this->hasMany(EntryLog::class, 'security_guard_id', 'guard_id');
+    }
+}
