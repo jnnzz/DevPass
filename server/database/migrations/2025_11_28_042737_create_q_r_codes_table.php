@@ -17,7 +17,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('device_id');
                 $table->string('qr_code_hash', 255);
                 $table->timestamp('generated_at')->nullable();
-                $table->timestamp('expires_at');
+                $table->timestamp('expires_at')->nullable();
                 $table->boolean('is_active')->default(true);
                 $table->timestamps();
                 
