@@ -32,12 +32,12 @@ return new class extends Migration
                 $table->string('mac_address', 17)->nullable();
                 $table->timestamp('registration_date')->nullable();
                 $table->string('registration_status', 20)->default('pending');
-                $table->unsignedBigInteger('approved_by')->nullable();
+                $table->unsignedBigInteger('approved_by');
                 $table->timestamp('approved_at')->nullable();
                 $table->timestamps();
                 
                 $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
-                $table->foreign('approved_by')->references('admin_id')->on('admins')->onDelete('set null');
+                $table->foreign('approved_by')->references('admin_id')->on('admins')->onDelete('cascade');
             });
         }
     }

@@ -17,13 +17,13 @@ class DatabaseSeeder extends Seeder
     {
         // Create Admin Account
         Student::firstOrCreate(
-            ['id' => 'ADMIN01'],
+            ['id' => '2222222'],
             [
                 'name' => 'Admin User',
                 'email' => 'admin@devpass.com',
                 'password' => 'admin123', // Will be auto-hashed by Student model
-                'course' => 'admin',
-                'department' => 'Administration',
+                'course_id' => 'admin',
+                // 'department' => 'Administration',
                 'phone' => '1234567890',
             ]
         );
@@ -35,8 +35,8 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Security Personnel',
                 'email' => 'security@devpass.com',
                 'password' => 'security123', // Will be auto-hashed by Student model
-                'course' => 'security',
-                'department' => 'Security',
+                'course_id' => 'security',
+                // 'department' => 'Security',
                 'phone' => '0987654321',
             ]
         );

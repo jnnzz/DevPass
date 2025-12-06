@@ -19,9 +19,8 @@ export default function Landing() {
     id: '',
     name: '',
     email: '',
-    course: '',
+    course_id: '',
     phone: '',
-    department: '',
     year_of_study: '',
     password: '',
     password_confirmation: '',
@@ -108,9 +107,8 @@ export default function Landing() {
           id: formData.id,
           name: formData.name,
           email: formData.email,
-          course: formData.course,
+          course_id: formData.course_id,
           phone: formData.phone,
-          department: formData.department,
           year_of_study: formData.year_of_study ? parseInt(formData.year_of_study) : null,
           password: formData.password,
           password_confirmation: formData.password_confirmation,
@@ -123,9 +121,8 @@ export default function Landing() {
             id: '',
             name: '',
             email: '',
-            course: '',
+            course_id: '',
             phone: '',
-            department: '',
             year_of_study: '',
             password: '',
             password_confirmation: '',
@@ -165,7 +162,7 @@ export default function Landing() {
       setRegisterStep(2);
       setError('');
     } else if (registerStep === 2) {
-      if (!formData.course || !formData.department) {
+      if (!formData.course_id) {
         setError('❌ Please fill in all required fields');
         return;
       }
@@ -263,29 +260,11 @@ export default function Landing() {
               <div className="relative">
                 <GraduationCap className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
                 <input
-                  name="course"
+                  name="course_id"
                   type="text"
                   className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                   placeholder="Computer Science"
-                  value={formData.course}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className={`block text-sm font-semibold ${formText} mb-3`}>
-                Department <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <GraduationCap className={`absolute left-4 top-3.5 w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`} />
-                <input
-                  name="department"
-                  type="text"
-                  className={`w-full pl-12 pr-4 py-3 ${inputBg} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                  placeholder="Engineering"
-                  value={formData.department}
+                  value={formData.course_id}
                   onChange={handleChange}
                   required
                 />
@@ -576,7 +555,6 @@ const renderHome = () => (
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          // whileHover={{ scale: 1.01 }}
           className={`${formBg} rounded-3xl p-8 lg:p-10 shadow-2xl hover:shadow-3xl transition-all duration-500`}
         >
           <motion.div
