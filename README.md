@@ -1,4 +1,4 @@
-<h1>📱 DevPass</h1>
+<h1>DevPass</h1>
   <h3>QR-based Device Registration Platform for Campus Entry</h3>
 
   <p>
@@ -7,7 +7,6 @@
 
 <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Platform-Web-blue?style=for-the-badge" />
-<img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" />
 
 </div>
 
