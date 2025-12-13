@@ -81,12 +81,8 @@ function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) 
                 <p className={`font-semibold ${textPrimary}`}>{device.studentId}</p>
               </div>
               <div>
-                <p className={`text-sm ${textSecondary}`}>Department</p>
-                <p className={`font-semibold ${textPrimary}`}>{device.department}</p>
-              </div>
-              <div>
                 <p className={`text-sm ${textSecondary}`}>Course</p>
-                <p className={`font-semibold ${textPrimary}`}>{device.course}</p>
+                <p className={`font-semibold ${textPrimary}`}>{device.course?.course_name || device.course}</p>
               </div>
             </div>
           </div>
@@ -96,37 +92,102 @@ function DeviceDetailsModal({ device, darkMode, onClose, onApprove, onReject }) 
             <h3 className={`font-bold mb-3 ${textPrimary}`}>Device Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className={`text-sm ${textSecondary} mb-1`}>Device Type</p>
-                <p className={`font-semibold ${textPrimary}`}>{device.type}</p>
-              </div>
-              <div>
                 <p className={`text-sm ${textSecondary} mb-1`}>Brand</p>
-                <p className={`font-semibold ${textPrimary}`}>{device.brand}</p>
+                <p className={`font-semibold ${textPrimary}`}>{device.brand || 'N/A'}</p>
               </div>
               <div>
                 <p className={`text-sm ${textSecondary} mb-1`}>Model</p>
-                <p className={`font-semibold ${textPrimary}`}>{device.model}</p>
+                <p className={`font-semibold ${textPrimary}`}>{device.model || 'N/A'}</p>
               </div>
               <div>
                 <p className={`text-sm ${textSecondary} mb-1`}>Serial Number</p>
-                <p className={`font-semibold ${textPrimary}`}>{device.serialNumber}</p>
+                <p className={`font-semibold ${textPrimary}`}>{device.serialNumber || 'N/A'}</p>
               </div>
               <div>
                 <p className={`text-sm ${textSecondary} mb-1`}>Registration Date</p>
-                <p className={`font-semibold ${textPrimary}`}>{device.registrationDate}</p>
+                <p className={`font-semibold ${textPrimary}`}>{device.registrationDate || 'N/A'}</p>
               </div>
               <div>
                 <p className={`text-sm ${textSecondary} mb-1`}>Status</p>
                 <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                   device.status === 'pending' 
                     ? darkMode ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-700'
+                    : device.status === 'rejected'
+                    ? darkMode ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700'
                     : darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
                 }`}>
-                  {device.status.charAt(0).toUpperCase() + device.status.slice(1)}
+                  {device.status ? device.status.charAt(0).toUpperCase() + device.status.slice(1) : 'N/A'}
                 </span>
+              </div>
+              <div>
+                <p className={`text-sm ${textSecondary} mb-1`}>QR Code Expiry</p>
+                <p className={`font-semibold ${textPrimary}`}>{device.qrExpiry || 'N/A'}</p>
               </div>
             </div>
           </div>
+
+          {/* Advanced Specifications */}
+          {(device.processor || device.motherboard || device.memory || device.harddrive || device.monitor || device.casing || device.cdRom || device.operatingSystem || device.macAddress) && (
+            <div className="mt-6">
+              <h3 className={`font-bold mb-3 ${textPrimary}`}>Advanced Specifications</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {device.processor && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Processor</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.processor}</p>
+                  </div>
+                )}
+                {device.motherboard && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Motherboard</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.motherboard}</p>
+                  </div>
+                )}
+                {device.memory && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Memory (RAM)</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.memory}</p>
+                  </div>
+                )}
+                {device.harddrive && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Hard Drive / SSD</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.harddrive}</p>
+                  </div>
+                )}
+                {device.monitor && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Monitor</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.monitor}</p>
+                  </div>
+                )}
+                {device.casing && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Casing</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.casing}</p>
+                  </div>
+                )}
+                {device.cdRom && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>CD/DVD/ROM</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.cdRom}</p>
+                  </div>
+                )}
+                {device.operatingSystem && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>Operating System</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.operatingSystem}</p>
+                  </div>
+                )}
+                {device.macAddress && (
+                  <div>
+                    <p className={`text-sm ${textSecondary} mb-1`}>MAC Address</p>
+                    <p className={`font-semibold ${textPrimary}`}>{device.macAddress}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           {device.status === 'pending' && (
@@ -178,60 +239,150 @@ export default function AdminDashboard() {
     active: 0,
     scansToday: 0
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedScan, setSelectedScan] = useState(null);
-  // Add this with your other useState declarations
   const [showSettings, setShowSettings] = useState(false);
-  // Fetch devices and stats
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const status = activeTab === 'all' ? 'all' : activeTab;
-        const [devicesRes, statsRes, scansRes] = await Promise.all([
-          api.get(`/devices?status=${status}`),
-          api.get('/devices/stats'),
-          api.get('/entries?limit=10')
-        ]);
-        
-        setDevices(devicesRes.data);
-        setStats({
-          ...statsRes.data,
-          scansToday: scansRes.data.length
-        });
-        setRecentScans(scansRes.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        if (error.response?.status === 401) {
-          navigate('/');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [activeTab, navigate]);
-
-  // Refresh data after approve/reject
-  const refreshData = async () => {
+  const [admin, setAdmin] = useState(null); // Admin user data
+  // Refresh data function (used for both initial load and auto-refresh)
+  // Optimized with request cancellation support
+  const refreshData = async (showLoading = false, signal = null) => {
     try {
+      if (showLoading) {
+        setLoading(true);
+      }
       const status = activeTab === 'all' ? 'all' : activeTab;
-      const [devicesRes, statsRes, scansRes] = await Promise.all([
-        api.get(`/devices?status=${status}`),
-        api.get('/devices/stats'),
-        api.get('/entries?limit=10')
+      
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 20000) // Reduced from 25s to 20s
+      );
+      
+      // Create abort controller if not provided
+      const abortController = signal || new AbortController();
+      
+      const [devicesRes, statsRes, scansRes] = await Promise.race([
+        Promise.all([
+          api.get(`/devices?status=${status}&per_page=50`, { signal: abortController.signal }), // Request 50 devices per page for performance
+          api.get('/devices/stats', { signal: abortController.signal }),
+          api.get('/entries?limit=10', { signal: abortController.signal })
+        ]),
+        timeoutPromise
       ]);
-      setDevices(devicesRes.data);
+      
+      // Handle paginated response (new format) or array response (backward compatibility)
+      const devicesData = devicesRes.data?.data || devicesRes.data || [];
+      setDevices(devicesData);
       setStats({
         ...statsRes.data,
-        scansToday: scansRes.data.length
+        scansToday: scansRes.data?.length || 0
       });
-      setRecentScans(scansRes.data);
+      setRecentScans(scansRes.data || []);
     } catch (error) {
+      // Ignore abort errors (request was cancelled)
+      if (error.name === 'AbortError' || error.name === 'CanceledError') {
+        return;
+      }
+      
       console.error('Error refreshing data:', error);
+      if (error.response?.status === 401) {
+        navigate('/');
+      } else if (error.message === 'Request timeout') {
+        console.error('Request timed out - server may be slow');
+        // Don't show error to user for auto-refresh, only for initial load
+        if (showLoading) {
+          // Set empty data to prevent infinite loading
+          setDevices([]);
+          setStats({ total: 0, pending: 0, active: 0, scansToday: 0 });
+          setRecentScans([]);
+        }
+      }
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
+
+  // Load admin data from storage
+  useEffect(() => {
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+    const storage = rememberMe ? localStorage : sessionStorage;
+    const adminData = storage.getItem('admin');
+    if (adminData) {
+      try {
+        setAdmin(JSON.parse(adminData));
+      } catch (e) {
+        console.error('Error parsing admin data:', e);
+      }
+    } else {
+      // Try to get from API profile
+      api.get('/auth/profile')
+        .then(response => {
+          if (response.data && response.data.student) {
+            setAdmin(response.data.student);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching admin profile:', error);
+        });
+    }
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    refreshData(true);
+  }, [activeTab, navigate]);
+
+  // Auto-refresh data every 15 seconds (optimized to reduce server load)
+  // Pauses when tab is hidden to save resources
+  useEffect(() => {
+    // Only auto-refresh if not currently loading
+    let isRefreshing = false;
+    let abortController = null;
+    
+    const refreshIfVisible = () => {
+      // Skip if tab is hidden or already refreshing
+      if (document.hidden || isRefreshing || loading) return;
+      
+      isRefreshing = true;
+      abortController = new AbortController();
+      
+      refreshData(false, abortController.signal)
+        .catch(error => {
+          // Ignore abort errors
+          if (error.name !== 'AbortError' && error.name !== 'CanceledError') {
+            console.error('Error refreshing data:', error);
+          }
+        })
+        .finally(() => {
+          isRefreshing = false;
+          abortController = null;
+        });
+    };
+    
+    const interval = setInterval(refreshIfVisible, 15000); // Increased from 10s to 15s
+
+    // Listen for visibility changes to pause/resume polling
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !isRefreshing && !loading) {
+        // Refresh immediately when tab becomes visible
+        refreshIfVisible();
+      } else if (document.hidden && abortController) {
+        // Cancel in-flight requests when tab is hidden
+        abortController.abort();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (abortController) {
+        abortController.abort();
+      }
+    };
+  }, [activeTab, loading]);
 
   const bgClass = darkMode 
     ? 'bg-black text-white' 
@@ -255,31 +406,37 @@ export default function AdminDashboard() {
 
   const handleApprove = async (deviceId) => {
     try {
+      setLoading(true);
       const response = await api.post(`/devices/${deviceId}/approve`);
       if (response.data.message) {
         // Show success message (you can replace with a toast notification)
         console.log('Device approved successfully');
       }
-      await refreshData();
+      await refreshData(true);
     } catch (error) {
       console.error('Error approving device:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to approve device';
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to approve device';
       alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleReject = async (deviceId) => {
     try {
+      setLoading(true);
       const response = await api.post(`/devices/${deviceId}/reject`);
       if (response.data.message) {
         // Show success message (you can replace with a toast notification)
         console.log('Device rejected successfully');
       }
-      await refreshData();
+      await refreshData(true);
     } catch (error) {
       console.error('Error rejecting device:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to reject device';
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to reject device';
       alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -316,7 +473,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 sm:p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl shadow-lg">
-                <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <QrCode className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-600 bg-clip-text text-transparent">
@@ -398,14 +555,14 @@ export default function AdminDashboard() {
                   (stats.total || 0) - (stats.pending || 0) - (stats.active || 0)
                 ],
                 backgroundColor: [
-                  darkMode ? 'rgba(34, 211, 238, 0.8)' : 'rgba(34, 211, 238, 0.6)', // Cyan for Pending
+                  darkMode ? 'rgba(202, 138, 4, 1.0)' : 'rgba(34, 211, 238, 0.6)', // Cyan for Pending
                   darkMode ? 'rgba(6, 182, 212, 0.8)' : 'rgba(6, 182, 212, 0.6)',   // Sky Blue for Active
-                  darkMode ? 'rgba(2, 132, 199, 0.8)' : 'rgba(2, 132, 199, 0.6)',   // Blue for Rejected
+                  darkMode ? 'rgba(239, 68, 68, 0.8)' : 'rgba(239, 68, 68, 0.6)',   // Red for Rejected
                 ],
                 borderColor: [
-                  darkMode ? 'rgba(34, 211, 238, 1)' : 'rgba(34, 211, 238, 1)',
+                  darkMode ? 'rgba(202, 138, 4, 1.0)' : 'rgba(34, 211, 238, 1)',
                   darkMode ? 'rgba(6, 182, 212, 1)' : 'rgba(6, 182, 212, 1)',
-                  darkMode ? 'rgba(2, 132, 199, 1)' : 'rgba(2, 132, 199, 1)',
+                  darkMode ? 'rgba(239, 68, 68, 1)' : 'rgba(239, 68, 68, 1)', // Red for Rejected
                 ],
                 borderWidth: 1,
                 borderRadius: 8,
@@ -418,6 +575,7 @@ export default function AdminDashboard() {
             plugins: {
               legend: {
                 position: 'top',
+                display: false,
                 labels: {
                   color: darkMode ? '#9CA3AF' : '#6B7280',
                   font: {
@@ -755,6 +913,8 @@ export default function AdminDashboard() {
                           <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${
                             device.status === 'pending'
                               ? darkMode ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-700'
+                              : device.status === 'rejected'
+                              ? darkMode ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700'
                               : darkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
                           }`}>
                             {device.status.charAt(0).toUpperCase() + device.status.slice(1)}
@@ -764,9 +924,7 @@ export default function AdminDashboard() {
                           {device.studentName} • {device.studentId}
                         </p>
                         <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
-                          <span className={`${textMuted}`}>{device.department}</span>
-                          <span className={`${textMuted}`}>•</span>
-                          <span className={`${textMuted}`}>{device.course}</span>
+                          <span className={`${textMuted}`}>{device.course?.course_name || device.course}</span>
                           <span className={`${textMuted}`}>•</span>
                           <span className={`${textMuted}`}>Registered: {device.registrationDate}</span>
                         </div>
@@ -774,7 +932,15 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
                       <button
-                        onClick={() => setSelectedDevice(device)}
+                        onClick={async () => {
+                          try {
+                            const response = await api.get(`/devices/${device.id}`);
+                            setSelectedDevice(response.data);
+                          } catch (error) {
+                            console.error('Error fetching device details:', error);
+                            setSelectedDevice(device); // Fallback to basic device data
+                          }
+                        }}
                         className={`p-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
                       >
                         <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -882,12 +1048,6 @@ export default function AdminDashboard() {
                       <div className="flex justify-between">
                         <span className={`text-sm ${textSecondary}`}>Student ID:</span>
                         <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.studentId}</span>
-                      </div>
-                    )}
-                    {selectedScan.studentDepartment && (
-                      <div className="flex justify-between">
-                        <span className={`text-sm ${textSecondary}`}>Department:</span>
-                        <span className={`text-sm font-semibold ${textPrimary}`}>{selectedScan.studentDepartment}</span>
                       </div>
                     )}
                     {selectedScan.studentCourse && (
@@ -1043,20 +1203,46 @@ export default function AdminDashboard() {
       )}
 
       {/* Settings Modal */}
-      {showSettings && (
-        <AdminSettings
-          darkMode={darkMode}
-          onClose={() => setShowSettings(false)}
-          adminData={{
-            name: "Admin User", // You can pass actual admin data here
+      {showSettings && (() => {
+        // Get admin data with fallback
+        const adminData = admin || (() => {
+          const rememberMe = localStorage.getItem('rememberMe') === 'true';
+          const storage = rememberMe ? localStorage : sessionStorage;
+          const stored = storage.getItem('admin');
+          if (stored) {
+            try {
+              return JSON.parse(stored);
+            } catch (e) {
+              console.error('Error parsing stored admin:', e);
+            }
+          }
+          return {
+            name: "Admin User",
             email: "admin@devpass.edu",
             phone: "+63 912 345 6789",
             role: "System Administrator",
             joinDate: "January 15, 2024",
             lastLogin: new Date().toLocaleString()
-          }}
-        />
-      )}
+          };
+        })();
+        
+        return (
+          <AdminSettings
+            darkMode={darkMode}
+            onClose={() => setShowSettings(false)}
+            adminData={adminData}
+            onUpdate={(updatedAdmin) => {
+              // Update admin state if it exists
+              const rememberMe = localStorage.getItem('rememberMe') === 'true';
+              const storage = rememberMe ? localStorage : sessionStorage;
+              if (updatedAdmin) {
+                storage.setItem('admin', JSON.stringify(updatedAdmin));
+                setAdmin(updatedAdmin);
+              }
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
