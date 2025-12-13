@@ -1,11 +1,37 @@
-DevPass:QR-based Device Registration Platform for Campus Entry
+<h1>📱 DevPass</h1>
+  <h3>QR-based Device Registration Platform for Campus Entry</h3>
 
-The DevPass system aims to replace the manual gate pass process by
-introducing a digital and automated device registration platform for students. The 
-system allows students to register their personal devices (laptop) through an online 
-form connected to a centralized database. Once registered, each device is 
-automatically assigned a unique QR code, which serves as its digital pass for campus 
-entry
+  <p>
+    <b>DevPass</b> replaces manual gate pass processes with a digital, automated device registration platform.
+  </p>
+
+<img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Platform-Web-blue?style=for-the-badge" />
+<img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" />
+
+</div>
+
+<br />
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/d8fc4b1d-b8b6-4c7c-8c6c-38ac953a885a" alt="DevPass Landing" width="100%" />
+</div>
+
+---
+
+## 📖 Overview
+
+The **DevPass** system aims to replace the manual gate pass process by introducing a digital and automated device registration platform for students. 
+
+The system allows students to register their personal devices (laptops) through an online form connected to a centralized database. Once registered, each device is automatically assigned a unique **QR code**, which serves as its digital pass for campus entry.
+
+### ✨ Key Features
+* ** automated Registration:** Students can easily input device serial numbers and specifications.
+* **QR Code Generation:** Instant digital pass generation upon approval.
+* **Role-Based Access:** Distinct portals for Students, Security Personnel, and Admins.
+* **Real-time Validation:** Security guards can scan and verify ownership instantly.
+
+---
 
 <img width="1905" height="946" alt="image" src="https://github.com/user-attachments/assets/d8fc4b1d-b8b6-4c7c-8c6c-38ac953a885a" />
 
