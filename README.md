@@ -1,508 +1,133 @@
-# DevPass - QR-Based Device Registration System
+<div align="center">
 
-Final Project for Database Management System
+  <h1>📱 DevPass</h1>
+  <h3>QR-based Device Registration Platform for Campus Entry</h3>
 
-## 📋 Prerequisites
+  <p>
+    <b>DevPass</b> replaces manual gate pass processes with a digital, automated device registration platform.
+  </p>
 
-Before you begin, make sure you have these installed on your system:
+<img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Platform-Web-blue?style=for-the-badge" />
+<img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" />
 
-### Backend Requirements:
-- **PHP 8.2+** - [Download](https://www.php.net/downloads)
-  - Required extensions: `pdo`, `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`
-- **Composer** - [Download](https://getcomposer.org/download/)
-- **MySQL 5.7+ or MariaDB 10.3+** - [Download MySQL](https://www.mysql.com/downloads/) | [Download MariaDB](https://mariadb.org/download/)
-- **Git** - [Download](https://git-scm.com/downloads)
+</div>
 
-### Frontend Requirements:
-- **Node.js 18+** (includes npm) - [Download](https://nodejs.org/)
-  - Recommended: Node.js 18.x or 20.x LTS
+<br />
 
----
-
-## 🚀 Complete Setup Guide (From GitHub Clone)
-
-### Step 1: Clone the Repository
-
-```bash
-git clone <repository-url>
-cd Database2v
-```
-
-Or if you already have the repository:
-```bash
-cd Database2v
-git pull origin main
-```
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/d8fc4b1d-b8b6-4c7c-8c6c-38ac953a885a" alt="DevPass Landing" width="100%" />
+</div>
 
 ---
 
-### Step 2: Backend Setup (Laravel)
+## 📖 Overview
 
-#### 2.1 Navigate to Backend Directory
-```bash
-cd DevPass/server
-```
+The **DevPass** system aims to replace the manual gate pass process by introducing a digital and automated device registration platform for students. 
 
-#### 2.2 Install PHP Dependencies
-```bash
-composer install
-```
+The system allows students to register their personal devices (laptops) through an online form connected to a centralized database. Once registered, each device is automatically assigned a unique **QR code**, which serves as its digital pass for campus entry.
 
-**What this does:**
-- Downloads all Laravel packages and dependencies listed in `composer.json`
-- Creates the `/vendor` folder with all PHP packages
-- This may take a few minutes depending on your internet connection
-
-**If you encounter errors:**
-- Make sure PHP 8.2+ is installed: `php -v`
-- Make sure Composer is installed: `composer --version`
-- Check that required PHP extensions are enabled
-
-#### 2.3 Create Environment File
-
-**On Linux/Mac:**
-```bash
-cp .env.example .env
-```
-
-**On Windows (PowerShell):**
-```powershell
-Copy-Item .env.example .env
-```
-
-**On Windows (Command Prompt):**
-```cmd
-copy .env.example .env
-```
-
-**If `.env.example` doesn't exist**, create a `.env` file manually with the following content:
-
-```env
-APP_NAME=DevPass
-APP_ENV=local
-APP_KEY=
-APP_DEBUG=true
-APP_URL=http://localhost
-
-LOG_CHANNEL=stack
-LOG_DEPRECATIONS_CHANNEL=null
-LOG_LEVEL=debug
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=devpass
-DB_USERNAME=root
-DB_PASSWORD=
-
-BROADCAST_DRIVER=log
-CACHE_DRIVER=file
-FILESYSTEM_DISK=local
-QUEUE_CONNECTION=sync
-SESSION_DRIVER=file
-SESSION_LIFETIME=120
-
-MEMCACHED_HOST=127.0.0.1
-
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-MAIL_MAILER=log
-MAIL_HOST=127.0.0.1
-MAIL_PORT=2525
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS="hello@example.com"
-MAIL_FROM_NAME="${APP_NAME}"
-
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_DEFAULT_REGION=us-east-1
-AWS_BUCKET=
-AWS_USE_PATH_STYLE_ENDPOINT=false
-
-VITE_APP_NAME="${APP_NAME}"
-```
-
-#### 2.4 Generate Application Key
-```bash
-php artisan key:generate
-```
-
-**What this does:**
-- Generates a unique encryption key for your application
-- Updates the `APP_KEY` in your `.env` file
-- **This is required** - the application will not work without it
-
-#### 2.5 Configure Database in `.env` File
-
-Open the `.env` file and update these database settings:
-
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=devpass
-DB_USERNAME=root
-DB_PASSWORD=your_mysql_password_here
-```
-
-**Important:** Replace `your_mysql_password_here` with your actual MySQL root password (or your MySQL username/password if different).
-
-#### 2.6 Create MySQL Database
-
-**Option A: Using MySQL Command Line**
-```bash
-mysql -u root -p
-```
-
-Then in MySQL:
-```sql
-CREATE DATABASE devpass CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-EXIT;
-```
-
-**Option B: Using phpMyAdmin**
-1. Open phpMyAdmin (usually at `http://localhost/phpmyadmin`)
-2. Click "New" in the left sidebar
-3. Database name: `devpass`
-4. Collation: `utf8mb4_unicode_ci`
-5. Click "Create"
-
-**Option C: Using MySQL Workbench**
-1. Open MySQL Workbench
-2. Connect to your MySQL server
-3. Right-click in Schemas → Create Schema
-4. Name: `devpass`
-5. Default Collation: `utf8mb4_unicode_ci`
-6. Click "Apply"
-
-#### 2.7 Run Database Migrations
-```bash
-php artisan migrate
-```
-
-**What this does:**
-- Creates all database tables defined in `/database/migrations/`
-- Tables created: `students`, `devices`, `qr_codes`, `entry_log`, `admins`, `gates`, `security_guards`, `password_reset_codes`, etc.
-- **Important:** Make sure your database is created and `.env` is configured correctly before running this
-
-**If you get errors:**
-- Check database connection: `php artisan migrate:status`
-- Verify MySQL is running
-- Check database credentials in `.env`
-- Ensure the database exists
-
-#### 2.8 (Optional) Run Database Seeders
-```bash
-php artisan db:seed
-```
-
-**Note:** This is optional and only needed if you want sample data.
-
-#### 2.9 Start Backend Server
-```bash
-php artisan serve
-```
-
-**Backend will run at:** `http://localhost:8000`
-
-**To run on a different port:**
-```bash
-php artisan serve --port=8001
-```
-
-**Keep this terminal open** - the server needs to keep running.
+### ✨ Key Features
+* ** automated Registration:** Students can easily input device serial numbers and specifications.
+* **QR Code Generation:** Instant digital pass generation upon approval.
+* **Role-Based Access:** Distinct portals for Students, Security Personnel, and Admins.
+* **Real-time Validation:** Security guards can scan and verify ownership instantly.
 
 ---
 
-### Step 3: Frontend Setup (React + Vite)
+## 📸 Application Screenshots
 
-#### 3.1 Open a New Terminal Window
+### 🎓 Student Portal
+> Allows students to register devices, view status, and access their QR codes.
 
-**Important:** Keep the backend server running in the first terminal, and open a **new terminal window** for the frontend.
+<details>
+<summary><b>👀 Click to view Student Dashboard & Registration</b></summary>
+<br>
 
-#### 3.2 Navigate to Frontend Directory
-```bash
-cd DevPass/client
-```
+| Login & Landing | Dashboard |
+| :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/a3fd71ae-1298-4a45-b6a4-04f3d07af837" width="100%"> | <img src="https://github.com/user-attachments/assets/8536ad78-064c-47eb-a4da-35656485eb4c" width="100%"> |
 
-#### 3.3 Install Node Dependencies
-```bash
-npm install
-```
+| Device Registration | QR Code Generation |
+| :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/6f68ec21-149d-4bf2-84f0-c060885ae952" width="100%"> | <img src="https://github.com/user-attachments/assets/f080711a-a726-4ae0-9cde-373d3fcba07c" width="100%"> |
 
-**What this does:**
-- Downloads all Node.js packages listed in `package.json`
-- Creates the `/node_modules` folder
-- This may take a few minutes depending on your internet connection
+| Profile & History | Additional Views |
+| :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/13f35784-5813-41ef-9dcd-b8052100544b" width="100%"> | <img src="https://github.com/user-attachments/assets/281673a8-093c-4359-bbff-7c27c0ef5ef0" width="100%"> |
 
-**If you encounter errors:**
-- Make sure Node.js 18+ is installed: `node -v`
-- Make sure npm is installed: `npm -v`
-- Try deleting `node_modules` and `package-lock.json`, then run `npm install` again
-- On Windows, you might need to run PowerShell/Command Prompt as Administrator
+| <img src="https://github.com/user-attachments/assets/b37a242e-8231-4d2a-9d74-967e43dbb248" width="100%"> | <img src="https://github.com/user-attachments/assets/a9ece511-1bfa-4519-b91b-18cb8bf0cda4" width="100%"> |
 
-#### 3.4 (Optional) Create Frontend Environment File
+</details>
 
-**On Linux/Mac:**
-```bash
-cp .env.example .env
-```
+<br>
 
-**On Windows (PowerShell):**
-```powershell
-Copy-Item .env.example .env
-```
+### 🛡️ Security Personnel
+> Interface for guards to scan QR codes and verify entry/exit logs.
 
-**If `.env.example` doesn't exist**, create a `.env` file in `DevPass/client/` with:
+<details>
+<summary><b>👀 Click to view Security Scanner Interface</b></summary>
+<br>
 
-```env
-VITE_API_URL=http://localhost:8000/api
-```
+| Scanner View | Verification Result |
+| :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/482ae437-6493-4021-a195-e8534673e224" width="100%"> | <img src="https://github.com/user-attachments/assets/eff1c097-ae9d-40ad-8f10-5474c61c558e" width="100%"> |
 
-**Note:** This is optional. The frontend will default to `http://localhost:8000/api` if this file doesn't exist. Only create it if your backend runs on a different URL or port.
+| Entry Logs | Incident Reporting |
+| :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/11866046-c87e-4a16-b03a-ae48db7179d6" width="100%"> | <img src="https://github.com/user-attachments/assets/4a3f7570-dbcd-4fff-802e-7caa26bbc139" width="100%"> |
 
-#### 3.5 Start Frontend Development Server
-```bash
-npm run dev
-```
+</details>
 
-**Frontend will run at:** `http://localhost:5173`
+<br>
 
-**Keep this terminal open** - the dev server needs to keep running.
+### ⚙️ Admin Dashboard
+> Centralized control for user management, analytics, and system settings.
 
----
+<details>
+<summary><b>👀 Click to view Admin Controls</b></summary>
+<br>
 
-## ✅ Verification
+| Admin Overview | User Management |
+| :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/eecdbe9c-4d3a-4836-a0f9-3e4ae1510e08" width="100%"> | <img src="https://github.com/user-attachments/assets/775eff94-6c0d-4a87-a791-d74c3344eda1" width="100%"> |
 
-After completing all steps, you should have:
+| Device Database | System Settings |
+| :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/edbeadf9-78e7-423a-9231-2043b7e90145" width="100%"> | <img src="https://github.com/user-attachments/assets/faa42655-1fd0-4d27-bc78-c68a205e0b5d" width="100%"> |
 
-1. ✅ Backend server running at `http://localhost:8000`
-2. ✅ Frontend server running at `http://localhost:5173`
-3. ✅ Database `devpass` created with all tables
-4. ✅ Both terminals showing server logs
+| <img src="https://github.com/user-attachments/assets/e1a699d3-e6fa-45a9-afe3-1e936b9796c0" width="100%"> | |
 
-**Test the application:**
-1. Open your browser and go to `http://localhost:5173`
-2. You should see the Landing page with Login/Register forms
-3. Try registering a new student account
-4. Try logging in with your credentials
+</details>
 
 ---
 
-## 📁 Project Structure
+## 🛠️ Built With
 
-### Backend (Laravel)
-```
-DevPass/server/
-├── app/
-│   ├── Http/Controllers/    # API Controllers
-│   ├── Models/               # Database Models
-│   ├── Services/             # Business Logic
-│   └── Mail/                 # Email Templates
-├── database/
-│   ├── migrations/          # Database Schema
-│   └── seeders/             # Sample Data
-├── routes/
-│   └── api.php              # API Routes
-├── config/                   # Configuration Files
-├── .env                      # Environment Variables (NOT in git)
-└── composer.json             # PHP Dependencies
-```
-
-### Frontend (React + Vite)
-```
-DevPass/client/
-├── src/
-│   ├── pages/               # Page Components
-│   ├── components/          # Reusable Components
-│   ├── services/            # API Services
-│   ├── api/                 # Axios Configuration
-│   └── hooks/               # Custom React Hooks
-├── public/                  # Static Assets
-├── .env                     # Environment Variables (NOT in git)
-└── package.json             # Node Dependencies
-```
+* **Frontend:** [React / HTML / CSS / JavaScript]
+* **Backend:** [Node.js / PHP / Python]
+* **Database:** [MySQL / MongoDB / Firebase]
+* **QR Technology:** [Library Name]
 
 ---
 
-## 🔧 Troubleshooting
+## 🚀 Getting Started
 
-### Common Issues
-
-#### 1. "Class not found" or "Composer autoload" errors
-**Solution:**
-```bash
-cd DevPass/server
-composer dump-autoload
-```
-
-#### 2. Database Connection Error
-**Check:**
-- MySQL/MariaDB service is running
-- Database credentials in `.env` are correct
-- Database `devpass` exists
-- User has permissions to access the database
-
-**Test connection:**
-```bash
-php artisan migrate:status
-```
-
-#### 3. Port Already in Use
-
-**Backend (port 8000):**
-```bash
-php artisan serve --port=8001
-```
-Then update frontend `.env`: `VITE_API_URL=http://localhost:8001/api`
-
-**Frontend (port 5173):**
-Vite will automatically try the next available port (5174, 5175, etc.)
-
-#### 4. "npm install" fails
-**Solutions:**
-- Delete `node_modules` folder and `package-lock.json`
-- Run `npm cache clean --force`
-- Try `npm install` again
-- Make sure Node.js version is 18+
-
-#### 5. "composer install" fails
-**Solutions:**
-- Make sure PHP 8.2+ is installed
-- Check required PHP extensions are enabled
-- Try `composer clear-cache`
-- Try `composer install --no-cache`
-
-#### 6. Migration Errors
-**If migrations fail:**
-```bash
-# Check migration status
-php artisan migrate:status
-
-# Rollback last migration
-php artisan migrate:rollback
-
-# Fresh migration (WARNING: deletes all data)
-php artisan migrate:fresh
-```
-
-#### 7. "APP_KEY" error
-**Solution:**
-```bash
-cd DevPass/server
-php artisan key:generate
-```
-
-#### 8. CORS Errors
-**Solution:**
-- Make sure backend is running on port 8000
-- Check `config/cors.php` settings
-- Verify `APP_URL` in `.env` matches your backend URL
-
-#### 9. Email Not Sending (Password Reset)
-**For Development:**
-- Set `MAIL_MAILER=log` in `.env`
-- Emails will be logged to `storage/logs/laravel.log`
-
-**For Production:**
-- Configure SMTP settings in `.env`:
-```env
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
-MAIL_ENCRYPTION=tls
-```
+1.  Clone the repository:
+    ```bash
+    git clone [https://github.com/your-username/devpass.git](https://github.com/your-username/devpass.git)
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Run the server:
+    ```bash
+    npm start
+    ```
 
 ---
 
-## 📝 Important Notes
-
-### Files NOT in Git (Don't Commit These)
-- `DevPass/server/.env` - Contains sensitive database credentials
-- `DevPass/client/.env` - Contains API URL (optional)
-- `DevPass/server/vendor/` - PHP dependencies (install with `composer install`)
-- `DevPass/client/node_modules/` - Node dependencies (install with `npm install`)
-- `DevPass/server/storage/logs/` - Application logs
-- `DevPass/server/bootstrap/cache/` - Cache files
-
-### Environment Files
-- Always use `.env.example` as a template (if it exists)
-- Never commit `.env` files to git
-- Each developer needs their own `.env` file with their database credentials
-
-### Database
-- The `users` table migration is intentionally empty (we use `students` table instead)
-- All migrations are in correct order to handle foreign key dependencies
-- Run migrations in order: `php artisan migrate`
-
-### Running the Application
-- **Both servers must be running** for full functionality:
-  - Backend: `php artisan serve` (Terminal 1)
-  - Frontend: `npm run dev` (Terminal 2)
-- Backend API: `http://localhost:8000/api`
-- Frontend App: `http://localhost:5173`
-
----
-
-## 🚀 Quick Start (After Initial Setup)
-
-Once everything is set up, to start the application:
-
-**Terminal 1 (Backend):**
-```bash
-cd DevPass/server
-php artisan serve
-```
-
-**Terminal 2 (Frontend):**
-```bash
-cd DevPass/client
-npm run dev
-```
-
-Then open `http://localhost:5173` in your browser.
-
----
-
-## 📚 Additional Resources
-
-- [Laravel Documentation](https://laravel.com/docs)
-- [React Documentation](https://react.dev/)
-- [Vite Documentation](https://vitejs.dev/)
-- [MySQL Documentation](https://dev.mysql.com/doc/)
-
----
-
-## 👥 Contributors
-
-This is a group project for Database Management System course.
-
----
-
-## 📄 License
-
-This project is for educational purposes.
-
----
-
-## ⚠️ Important Reminders
-
-1. **Always pull latest changes** before starting work: `git pull origin main`
-2. **Never commit `.env` files** - they contain sensitive information
-3. **Run migrations** after pulling: `php artisan migrate`
-4. **Install dependencies** if `composer.json` or `package.json` changed: `composer install` / `npm install`
-5. **Clear cache** if you encounter strange errors: `php artisan config:clear && php artisan cache:clear`
-
----
-
-**Last Updated:** Based on current codebase review
-**PHP Version Required:** 8.2+
-**Node.js Version Required:** 18+
-**Laravel Version:** 12.0
-**React Version:** 19.1.1
+<div align="center">
+    <p>Developed for Campus Security Modernization.</p>
+</div>
