@@ -42,6 +42,7 @@ Admin Dashboard
 
 <img width="1905" height="941" alt="image" src="https://github.com/user-attachments/assets/e1a699d3-e6fa-45a9-afe3-1e936b9796c0" />
 
-![Uploading image.png…]()
+<img width="1905" height="941" alt="image" src="https://github.com/user-attachments/assets/ae5e30c6-50cf-4293-977b-6821cf93d639" />
+
 
 
