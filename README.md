@@ -1,3 +1,12 @@
+DevPass:QR-based Device Registration Platform for Campus Entry
+
+The DevPass system aims to replace the manual gate pass process by
+introducing a digital and automated device registration platform for students. The 
+system allows students to register their personal devices (laptop) through an online 
+form connected to a centralized database. Once registered, each device is 
+automatically assigned a unique QR code, which serves as its digital pass for campus 
+entry
+
 <img width="1905" height="946" alt="image" src="https://github.com/user-attachments/assets/d8fc4b1d-b8b6-4c7c-8c6c-38ac953a885a" />
 
 <img width="1907" height="937" alt="image" src="https://github.com/user-attachments/assets/a3fd71ae-1298-4a45-b6a4-04f3d07af837" />
