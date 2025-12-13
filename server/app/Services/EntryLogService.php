@@ -48,13 +48,13 @@ class EntryLogService
                 $query->where('student_id', $studentId);
             })
             ->with(['qrCode.device', 'gate', 'securityGuard'])
-            ->where('status', 'success')
+            // Show both approved (success) and denied (failed) entries
             ->orderBy('scan_timestamp', 'desc')
             ->limit($limit)
             ->get();
     }
 
-    public function getEntryLogsByDate($date, $gateId = null)
+    public function getEntryLogsByDate($date, $gateId = null, $limit = 100)
     {
         $query = EntryLog::whereDate('scan_timestamp', $date);
         
@@ -62,17 +62,67 @@ class EntryLogService
             $query->where('gate_id', $gateId);
         }
         
-        return $query->get();
+        // Add limit to prevent loading all logs for a date (performance optimization)
+        return $query->orderBy('scan_timestamp', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     public function createEntryLog(array $data)
     {
-        // Set scan_timestamp if not provided
-        if (!isset($data['scan_timestamp'])) {
-            $data['scan_timestamp'] = Carbon::now();
-        }
+        try {
+            // Set scan_timestamp if not provided (in application timezone)
+            if (!isset($data['scan_timestamp'])) {
+                $data['scan_timestamp'] = Carbon::now(config('app.timezone'));
+            }
 
-        return EntryLog::create($data);
+            // If qr_code_hash is provided but qr_id is not, find the QR code and get its ID
+            if (isset($data['qr_code_hash']) && !isset($data['qr_id'])) {
+                $qrCode = \App\Models\QRCode::where('qr_code_hash', $data['qr_code_hash'])->first();
+                if ($qrCode && isset($qrCode->qr_id)) {
+                    $data['qr_id'] = $qrCode->qr_id;
+                } else {
+                    \Log::error('QR code not found for hash: ' . ($data['qr_code_hash'] ?? 'null'), [
+                        'qr_code_hash' => $data['qr_code_hash'] ?? 'null',
+                        'provided_data' => array_keys($data)
+                    ]);
+                    throw new \Exception('QR code not found in database. Hash: ' . ($data['qr_code_hash'] ?? 'null'));
+                }
+            }
+            
+            // Ensure qr_id is set (required field)
+            if (!isset($data['qr_id'])) {
+                \Log::error('qr_id is missing from entry log data', [
+                    'provided_data' => array_keys($data),
+                    'qr_code_hash' => $data['qr_code_hash'] ?? 'not provided'
+                ]);
+                throw new \Exception('qr_id is required for entry log creation. QR code hash: ' . ($data['qr_code_hash'] ?? 'not provided'));
+            }
+
+            // Validate required fields before creating
+            $requiredFields = ['qr_id', 'qr_code_hash', 'gate_id', 'security_guard_id', 'status'];
+            foreach ($requiredFields as $field) {
+                if (!isset($data[$field])) {
+                    \Log::error("Missing required field '{$field}' in entry log data", $data);
+                    throw new \Exception("Missing required field: {$field}");
+                }
+            }
+
+            return EntryLog::create($data);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database query error creating entry log: ' . $e->getMessage(), [
+                'data' => $data,
+                'sql' => $e->getSql() ?? 'N/A',
+                'bindings' => $e->getBindings() ?? [],
+            ]);
+            throw $e; // Re-throw to be handled by controller
+        } catch (\Exception $e) {
+            \Log::error('Error creating entry log: ' . $e->getMessage(), [
+                'data' => $data,
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e; // Re-throw to be handled by controller
+        }
     }
 
     public function getStats($gateId = null, $date = null, $securityGuardId = null)
@@ -93,7 +143,7 @@ class EntryLogService
         $totalScans = $query->count();
         $successCount = $query->where('status', 'success')->count();
         $successRate = $totalScans > 0 ? round(($successCount / $totalScans) * 100) : 0;
-        $lastHour = $query->where('scan_timestamp', '>=', Carbon::now()->subHour())->count();
+        $lastHour = $query->where('scan_timestamp', '>=', Carbon::now(config('app.timezone'))->subHour())->count();
         
         return [
             'scansToday' => $totalScans,
